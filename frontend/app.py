@@ -1,7 +1,6 @@
 import sys
 import os
 
-# Dodaj katalog src do ścieżki Pythona
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.streamlit_config import ChatbotApp

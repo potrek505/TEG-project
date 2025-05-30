@@ -17,8 +17,8 @@ def start_project():
     backend_process = subprocess.Popen(
         ["python", "app.py"], 
         cwd=backend_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=None,  # Logi będą wyświetlane w konsoli
+        stderr=None,  # Logi błędów również będą wyświetlane w konsoli
         text=True
     )
     
@@ -29,8 +29,6 @@ def start_project():
     # Check if backend started successfully
     if backend_process.poll() is not None:
         print("ERROR: Backend failed to start!")
-        stderr = backend_process.stderr.read()
-        print(f"Backend error: {stderr}")
         return
     
     print("Backend running successfully!")
@@ -40,8 +38,8 @@ def start_project():
     frontend_process = subprocess.Popen(
         ["streamlit", "run", "app.py"], 
         cwd=frontend_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=None,  # Logi będą wyświetlane w konsoli
+        stderr=None,  # Logi błędów również będą wyświetlane w konsoli
         text=True
     )
     
@@ -51,8 +49,6 @@ def start_project():
     if frontend_process.poll() is not None:
         print("ERROR: Frontend failed to start!")
         backend_process.terminate()
-        stderr = frontend_process.stderr.read()
-        print(f"Frontend error: {stderr}")
         return
     
     print("Frontend running successfully!")
