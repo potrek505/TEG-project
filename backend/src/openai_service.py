@@ -27,13 +27,15 @@ class OpenAIService:
         self.supabase_url = supabase_url
         self.supabase_key = supabase_key
         self.supabase_client = None
-        self.memory = ConversationBufferMemory(return_messages=True)  # Pamięć jako atrybut klasy
-        
-        # Initialize Supabase client if credentials are provided
+        self.memory = ConversationBufferMemory(return_messages=True)
+
         if supabase_url and supabase_key:
             self.supabase_client = create_client(supabase_url, supabase_key)
         
-    def get_agent_response(self, human_message, system_message=None, model=None, temperature=None):
+    def clear_conversation(self):
+        self.memory.clear()
+    
+    def get_agent_response(self, human_message, system_message="", model=None, temperature=None):
         """
         Get a response using a ReAct agent with Supabase tools
         
@@ -47,18 +49,15 @@ class OpenAIService:
             str: The response from the agent or None if an error occurred
         """
         try:
-            # Use provided values or fall back to defaults
             model = model or self.default_model
             temperature = temperature or self.default_temperature
             
-            # Initialize ChatOpenAI with the specified parameters
             llm = ChatOpenAI(
                 api_key=self.api_key,
                 model=model,
                 temperature=temperature
             )
             
-            # Prepare messages
             messages = []
             system_message = """
                 You are a helpful assistant with access to a database. The database contains the following table:
@@ -92,21 +91,14 @@ class OpenAIService:
 
                 Use this information to answer questions or query the database effectively.
                 """
-            # Add system message if provided
             if system_message:
                 messages.append(SystemMessage(content=system_message))
         
-            # Add human message
             messages.append(HumanMessage(content=human_message))
-        
-            # Log the input messages
-            print(f"[DEBUG] Input messages: {messages}")
-        
-            # Create Supabase tools
+    
             query_supabase_tool = create_query_supabase_tool(self.supabase_client)
             tools = [query_supabase_tool]
         
-            # Create a prompt template
             prompt = PromptTemplate.from_template(
                 "You are a helpful assistant. Use the tools below to assist you in answering the question.\n\n"
                 "Chat history:\n{history}\n\n"
@@ -121,26 +113,15 @@ class OpenAIService:
                 "Use the tools as needed to provide a helpful response:\n{agent_scratchpad}"
             )
         
-            # Create a ReAct agent
             agent_executor = AgentExecutor.from_agent_and_tools(
                 agent=create_react_agent(llm, tools, prompt),
                 tools=tools,
                 verbose=True,
                 handle_parsing_errors=True,
-                memory=self.memory  # Pamięć jako atrybut klasy
+                memory=self.memory 
             )
         
-            # Log the current memory state
-            print(f"[DEBUG] Memory before agent execution: {self.memory.load_memory_variables({})}")
-        
-            # Run the agent
             response = agent_executor.invoke({"input": human_message})
-        
-            # Log the current memory state
-            print(f"[DEBUG] Memory after agent execution: {self.memory.load_memory_variables({})}")
-        
-            # Log the raw response
-            print(f"[DEBUG] Raw agent response: {response}")
         
             return response.get("output", "No response generated")
         

@@ -3,16 +3,6 @@ from langchain_core.tools import tool
 def create_query_supabase_tool(supabase_client):
     @tool
     def query_supabase(query_string: str) -> str:
-        """
-        Query the Supabase database
-        
-        Args:
-            query_string (str): The query in format "table_name:column:value" or 
-                                "table_name:limit:n" or "table_name:all"
-        
-        Returns:
-            str: Results from the database query
-        """
         try:
             if not supabase_client:
                 return "Supabase client is not configured. Please check your environment variables."
@@ -26,12 +16,10 @@ def create_query_supabase_tool(supabase_client):
             query_type = 'all'
             
             if query_type.lower() == "all":
-                # Get all records from the table
                 result = supabase_client.table(table_name).select("*").execute()
                 return str(result.data)
             
             elif query_type.lower() == "limit":
-                # Get limited number of records
                 if len(parts) < 3:
                     return "Missing limit value. Use 'table_name:limit:n'."
                 limit = int(parts[2].strip())
@@ -39,13 +27,11 @@ def create_query_supabase_tool(supabase_client):
                 return str(result.data)
             
             else:
-                # Get records by column value
                 if len(parts) < 3:
                     return "Missing value for column. Use 'table_name:column:value'."
                 column = query_type
                 value = parts[2].strip()
                 
-                # Validate column
                 allowed_columns = ["id", "transaction_id", "account_id", "booking_date", "value_date", 
                                    "booking_date_time", "transaction_amount", "transaction_currency", 
                                    "creditor_name", "creditor_account_iban", "debtor_name", 

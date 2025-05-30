@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 
-# Load config from a file or define it here
 config = {
     'app': {
         'title': "Your Finance Buddy",
@@ -15,24 +14,19 @@ config = {
 }
 
 class ChatbotApp:
-    """Main Streamlit Your Finance Buddy Application"""
     
     def __init__(self):
         """Initialize the Your Finance Buddy application"""
-        # Set page title and configuration
         st.set_page_config(
             page_title=config.get('app', {}).get('title', "Your Finance Buddy"),
             layout="wide",
             initial_sidebar_state="collapsed"
         )
         
-        # Add custom CSS for ChatGPT-like styling
         self._add_custom_css()
         
-        # Get backend URL from environment or config
         self.backend_url = config.get('backend_url')
         
-        # Check if backend is accessible
         try:
             response = requests.get(f"{self.backend_url}/api/health")
             if response.status_code != 200:
@@ -40,11 +34,9 @@ class ChatbotApp:
         except Exception as e:
             st.warning(f"Cannot connect to backend at {self.backend_url}: {str(e)}")
         
-        # Initialize session state for chat history and settings
         self._initialize_session_state()
     
     def _add_custom_css(self):
-        """Add custom CSS for ChatGPT-like styling"""
         st.markdown("""
         <style>
         /* Hide Streamlit branding and menu */
@@ -186,20 +178,17 @@ class ChatbotApp:
         """, unsafe_allow_html=True)
         
     def _initialize_session_state(self):
-        """Initialize session state variables"""
-        # Set default model if not already in session state
+
         if "openai_model" not in st.session_state:
             st.session_state.openai_model = config.get('default_model', "gpt-4o-mini")
         
-        # Initialize message history with default system message
         if "messages" not in st.session_state:
             st.session_state.messages = [
                 {"role": "system", "content": config.get('default_system_message', "You are Your Finance Buddy, a helpful and knowledgeable financial advisor AI assistant. Provide accurate financial guidance, investment advice, budgeting tips, and money management strategies in a friendly and approachable manner.")}
             ]
     
     def display_welcome_message(self):
-        """Display welcome message when chat is empty"""
-        if len(st.session_state.messages) <= 1:  # Only system message
+        if len(st.session_state.messages) <= 1:
             st.markdown("""
             <div class="welcome-container">
                 <div class="welcome-title">How can I help you today?</div>
@@ -211,33 +200,20 @@ class ChatbotApp:
             """, unsafe_allow_html=True)
     
     def display_chat_messages(self):
-        """Display existing chat messages"""
-        # Display all messages except the system message
         for message in st.session_state.messages:
             if message["role"] != "system":
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
     
     def handle_user_input(self):
-        """Process user input and generate response using backend API"""
-        # Get user input from chat input box
-        prompt = st.chat_input(config.get('chat_placeholder', "Ask Your Finance Buddy anything about money..."))
-        
-        if prompt:
-            # Add user message to chat history
+        if prompt := st.chat_input(config.get('chat_placeholder', "Ask Your Finance Buddy anything about money...")):
             st.session_state.messages.append({"role": "user", "content": prompt})
             
-            # Display user message
             with st.chat_message("user"):
                 st.markdown(prompt)
             
-            # Generate and display assistant response
             with st.chat_message("assistant"):
-                message_placeholder = st.empty()
-                message_placeholder.markdown('<span class="thinking">Thinking...</span>', unsafe_allow_html=True)
-                
                 try:
-                    # Call backend API
                     response = requests.post(
                         f"{self.backend_url}/api/agent-chat",
                         json={
@@ -246,33 +222,33 @@ class ChatbotApp:
                             "model": st.session_state.openai_model,
                             "temperature": 0.7
                         },
-                        headers={"Content-Type": "application/json"}
+                        headers={"Content-Type": "application/json"},
+                        timeout=30
                     )
                     
                     if response.status_code == 200:
                         response_data = response.json()
-                        assistant_response = response_data.get("response", "")
+                        assistant_response = response_data.get("response", "No response received")
                         
-                        # Update placeholder with the response
-                        message_placeholder.markdown(assistant_response)
-                        
-                        # Add assistant response to chat history
+                        st.markdown(assistant_response)
                         st.session_state.messages.append({"role": "assistant", "content": assistant_response})
                     else:
                         error_message = f"Error: API returned status {response.status_code}"
-                        message_placeholder.error(error_message)
+                        st.error(error_message)
                         
+                except requests.exceptions.Timeout:
+                    st.error("Request timed out. Please try again.")
+                except requests.exceptions.ConnectionError:
+                    st.error("Cannot connect to backend. Please check if the server is running.")
                 except Exception as e:
-                    error_message = f"Error communicating with backend: {str(e)}"
-                    message_placeholder.error(error_message)
+                    st.error(f"Error communicating with backend: {str(e)}")
     
     def clear_conversation(self):
-        """Completely clear conversation and reset Your Finance Buddy memory"""
         try:
-            # Call backend API to clear conversation memory
             response = requests.post(
                 f"{self.backend_url}/api/clear-conversation",
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
+                timeout=10
             )
             
             if response.status_code == 200:
@@ -283,40 +259,27 @@ class ChatbotApp:
         except Exception as e:
             st.warning(f"Could not clear backend memory: {str(e)}")
         
-        # Reset local session state completely
         st.session_state.messages = [
             {"role": "system", "content": config.get('default_system_message', "You are Your Finance Buddy, a helpful and knowledgeable financial advisor AI assistant. Provide accurate financial guidance, investment advice, budgeting tips, and money management strategies in a friendly and approachable manner.")}
         ]
         
-        # Reset model to default
         st.session_state.openai_model = config.get('default_model', "gpt-4o-mini")
         
-        # Force a rerun to refresh the UI
         st.rerun()
 
     def run(self):
-        """Run the Streamlit application"""
-        # Title
         st.markdown('<div class="chat-title">Your Finance Buddy</div>', unsafe_allow_html=True)
         
-        # Clear button in top right
         col1, col2, col3 = st.columns([6, 1, 1])
         with col3:
             if st.button("🗑️ Clear", key="clear_chat"):
                 self.clear_conversation()
         
-        # Main chat container
         with st.container():
-            # Show welcome message if no conversation yet
             self.display_welcome_message()
-            
-            # Display existing chat messages
             self.display_chat_messages()
-        
-        # Handle user input (this should be at the bottom)
-        self.handle_user_input()
+            self.handle_user_input()
 
-# Run the app
 if __name__ == "__main__":
     app = ChatbotApp()
     app.run()

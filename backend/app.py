@@ -7,7 +7,6 @@ app = Flask(__name__)
 
 load_dotenv()
 
-# Load API keys and configuration
 API_KEY = os.getenv("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -17,7 +16,6 @@ default_temperature = os.getenv("DEFAULT_TEMPERATURE", 0)
 if not API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable is not set.")
 
-# Initialize OpenAI service with Supabase credentials
 openai_service = OpenAIService(
     api_key=API_KEY,
     default_model=default_model,
@@ -52,16 +50,11 @@ def chat():
 
 @app.route('/api/agent-chat', methods=['POST'])
 def agent_chat():
-    """Endpoint for agent-based responses with database access capabilities"""
     data = request.json
     
     if not data or "message" not in data:
         return jsonify({"error": "Invalid request, 'message' field is required"}), 400
-    
-    # Log the incoming request
-    print(f"[DEBUG] Incoming request: {data}")
-    
-    # Check if Supabase is configured
+        
     if not openai_service.supabase_client:
         return jsonify({"error": "Supabase client not configured. Please check your environment variables."}), 501
     
@@ -77,9 +70,6 @@ def agent_chat():
         temperature=temperature
     )
 
-    # Log the response
-    print(f"[DEBUG] Agent response: {response}")
-
     if response:
         return jsonify({"response": response}), 200
     else:
@@ -91,19 +81,9 @@ def health_check():
 
 @app.route('/api/clear-conversation', methods=['POST'])
 def clear_conversation():
-    """Clear the chatbot's conversation memory and reset to initial state"""
     try:
-        # Log the clear request
-        print(f"[DEBUG] Clear conversation request received")
-        
-        # Clear the OpenAI service conversation memory
         if hasattr(openai_service, 'clear_conversation'):
             openai_service.clear_conversation()
-            print(f"[DEBUG] OpenAI service conversation cleared")
-        
-        # If you have any session-based memory or database conversation history,
-        # clear it here as well
-        
         return jsonify({
             "status": "success", 
             "message": "Conversation memory cleared successfully"
