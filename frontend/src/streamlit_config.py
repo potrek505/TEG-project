@@ -188,7 +188,7 @@ class ChatbotApp:
             ]
     
     def display_welcome_message(self):
-        if len(st.session_state.messages) <= 1:
+        if len(st.session_state.messages) <= 1:  # Only system message
             st.markdown("""
             <div class="welcome-container">
                 <div class="welcome-title">How can I help you today?</div>
@@ -206,13 +206,18 @@ class ChatbotApp:
                     st.markdown(message["content"])
     
     def handle_user_input(self):
-        if prompt := st.chat_input(config.get('chat_placeholder', "Ask Your Finance Buddy anything about money...")):
+        prompt = st.chat_input(config.get('chat_placeholder', "Ask Your Finance Buddy anything about money..."))
+        
+        if prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
             
             with st.chat_message("user"):
                 st.markdown(prompt)
             
             with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                message_placeholder.markdown('<span class="thinking">Thinking...</span>', unsafe_allow_html=True)
+                
                 try:
                     response = requests.post(
                         f"{self.backend_url}/api/agent-chat",
@@ -222,33 +227,29 @@ class ChatbotApp:
                             "model": st.session_state.openai_model,
                             "temperature": 0.7
                         },
-                        headers={"Content-Type": "application/json"},
-                        timeout=30
+                        headers={"Content-Type": "application/json"}
                     )
                     
                     if response.status_code == 200:
                         response_data = response.json()
-                        assistant_response = response_data.get("response", "No response received")
+                        assistant_response = response_data.get("response", "")
                         
-                        st.markdown(assistant_response)
+                        message_placeholder.markdown(assistant_response)
+                        
                         st.session_state.messages.append({"role": "assistant", "content": assistant_response})
                     else:
                         error_message = f"Error: API returned status {response.status_code}"
-                        st.error(error_message)
+                        message_placeholder.error(error_message)
                         
-                except requests.exceptions.Timeout:
-                    st.error("Request timed out. Please try again.")
-                except requests.exceptions.ConnectionError:
-                    st.error("Cannot connect to backend. Please check if the server is running.")
                 except Exception as e:
-                    st.error(f"Error communicating with backend: {str(e)}")
+                    error_message = f"Error communicating with backend: {str(e)}"
+                    message_placeholder.error(error_message)
     
     def clear_conversation(self):
         try:
             response = requests.post(
                 f"{self.backend_url}/api/clear-conversation",
-                headers={"Content-Type": "application/json"},
-                timeout=10
+                headers={"Content-Type": "application/json"}
             )
             
             if response.status_code == 200:
@@ -277,8 +278,10 @@ class ChatbotApp:
         
         with st.container():
             self.display_welcome_message()
+            
             self.display_chat_messages()
-            self.handle_user_input()
+        
+        self.handle_user_input()
 
 if __name__ == "__main__":
     app = ChatbotApp()

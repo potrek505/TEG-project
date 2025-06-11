@@ -3,6 +3,16 @@ from langchain_core.tools import tool
 def create_query_supabase_tool(supabase_client):
     @tool
     def query_supabase(query_string: str) -> str:
+        """
+        Query the Supabase database
+        
+        Args:
+            query_string (str): The query in format "table_name:column:value" or 
+                                "table_name:limit:n" or "table_name:all"
+        
+        Returns:
+            str: Results from the database query
+        """
         try:
             if not supabase_client:
                 return "Supabase client is not configured. Please check your environment variables."
