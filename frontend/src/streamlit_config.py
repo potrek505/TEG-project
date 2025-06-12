@@ -1,12 +1,16 @@
 import streamlit as st
 import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 config = {
     'app': {
         'title': "Your Finance Buddy",
         'layout': "wide"
     },
-    'backend_url': "http://localhost:55000",
+    'backend_url': f"http://localhost:{os.environ.get('BACKEND_PORT')}",
     'default_model': "gpt-4o-mini",
     'default_system_message': "You are Your Finance Buddy, a helpful and knowledgeable financial advisor AI assistant. Provide accurate financial guidance, investment advice, budgeting tips, and money management strategies in a friendly and approachable manner.",
     'chat_placeholder': "Ask Your Finance Buddy anything about money...",
@@ -23,159 +27,16 @@ class ChatbotApp:
             initial_sidebar_state="collapsed"
         )
         
-        self._add_custom_css()
-        
         self.backend_url = config.get('backend_url')
         
         try:
-            response = requests.get(f"{self.backend_url}/api/health")
+            response = requests.get(f"{self.backend_url}/health")
             if response.status_code != 200:
                 st.warning(f"Backend API is not responding properly. Status: {response.status_code}")
         except Exception as e:
             st.warning(f"Cannot connect to backend at {self.backend_url}: {str(e)}")
         
         self._initialize_session_state()
-    
-    def _add_custom_css(self):
-        st.markdown("""
-        <style>
-        /* Hide Streamlit branding and menu */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        
-        /* Main container styling */
-        .stApp {
-            background-color: #212121;
-        }
-        
-        /* Chat container */
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        /* Title styling */
-        .chat-title {
-            text-align: center;
-            color: white;
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 2rem;
-            padding: 1rem;
-        }
-        
-        /* Message styling */
-        .stChatMessage {
-            background-color: transparent !important;
-            padding: 1rem 0 !important;
-        }
-        
-        /* User message styling */
-        .stChatMessage[data-testid="chat-message-user"] {
-            background-color: transparent !important;
-        }
-        
-        .stChatMessage[data-testid="chat-message-user"] > div {
-            background-color: #2f2f2f !important;
-            border-radius: 18px !important;
-            padding: 12px 16px !important;
-            margin-left: 20% !important;
-            color: white !important;
-        }
-        
-        /* Assistant message styling */
-        .stChatMessage[data-testid="chat-message-assistant"] {
-            background-color: transparent !important;
-        }
-        
-        .stChatMessage[data-testid="chat-message-assistant"] > div {
-            background-color: #444654 !important;
-            border-radius: 18px !important;
-            padding: 12px 16px !important;
-            margin-right: 20% !important;
-            color: white !important;
-        }
-        
-        /* Chat input styling */
-        .stChatInputContainer {
-            background-color: #40414f !important;
-            border-radius: 12px !important;
-            border: 1px solid #565869 !important;
-            margin: 1rem auto !important;
-            max-width: 800px !important;
-        }
-        
-        .stChatInputContainer input {
-            background-color: transparent !important;
-            color: white !important;
-            border: none !important;
-            font-size: 16px !important;
-        }
-        
-        .stChatInputContainer input::placeholder {
-            color: #8e8ea0 !important;
-        }
-        
-        /* Button styling */
-        .stButton > button {
-            background-color: #10a37f !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 6px !important;
-            padding: 8px 16px !important;
-            font-weight: 500 !important;
-            transition: background-color 0.2s !important;
-        }
-        
-        .stButton > button:hover {
-            background-color: #1a7f64 !important;
-        }
-        
-        /* Clear button styling */
-        .clear-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 999;
-        }
-        
-        /* Avatar styling */
-        .stChatMessage img {
-            width: 32px !important;
-            height: 32px !important;
-            border-radius: 50% !important;
-        }
-        
-        /* Welcome message styling */
-        .welcome-container {
-            text-align: center;
-            color: #8e8ea0;
-            padding: 2rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .welcome-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
-            margin-bottom: 1rem;
-        }
-        
-        .welcome-subtitle {
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-        
-        /* Thinking indicator */
-        .thinking {
-            color: #8e8ea0 !important;
-            font-style: italic !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
         
     def _initialize_session_state(self):
 
@@ -188,16 +49,13 @@ class ChatbotApp:
             ]
     
     def display_welcome_message(self):
-        if len(st.session_state.messages) <= 1:  # Only system message
+        if len(st.session_state.messages) <= 1:
             st.markdown("""
-            <div class="welcome-container">
-                <div class="welcome-title">How can I help you today?</div>
-                <div class="welcome-subtitle">
-                    I'm your AI assistant, ready to answer questions and help with various tasks.
-                    Just type your message below to get started!
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            **How can I help you today?**
+            
+            I'm your AI assistant, ready to answer questions and help with various tasks.
+            Just type your message below to get started!
+            """)
     
     def display_chat_messages(self):
         for message in st.session_state.messages:
@@ -216,16 +74,14 @@ class ChatbotApp:
             
             with st.chat_message("assistant"):
                 message_placeholder = st.empty()
-                message_placeholder.markdown('<span class="thinking">Thinking...</span>', unsafe_allow_html=True)
+                message_placeholder.markdown("Thinking...")
                 
                 try:
                     response = requests.post(
-                        f"{self.backend_url}/api/agent-chat",
+                        f"{self.backend_url}/chat",
                         json={
                             "message": prompt,
-                            "context": st.session_state.messages[0]["content"],
-                            "model": st.session_state.openai_model,
-                            "temperature": 0.7
+                            "user_id": "streamlit_user"
                         },
                         headers={"Content-Type": "application/json"}
                     )
@@ -246,30 +102,17 @@ class ChatbotApp:
                     message_placeholder.error(error_message)
     
     def clear_conversation(self):
-        try:
-            response = requests.post(
-                f"{self.backend_url}/api/clear-conversation",
-                headers={"Content-Type": "application/json"}
-            )
-            
-            if response.status_code == 200:
-                st.success("Conversation cleared successfully!")
-            else:
-                st.warning(f"Backend clear failed with status: {response.status_code}")
-                
-        except Exception as e:
-            st.warning(f"Could not clear backend memory: {str(e)}")
-        
         st.session_state.messages = [
             {"role": "system", "content": config.get('default_system_message', "You are Your Finance Buddy, a helpful and knowledgeable financial advisor AI assistant. Provide accurate financial guidance, investment advice, budgeting tips, and money management strategies in a friendly and approachable manner.")}
         ]
         
         st.session_state.openai_model = config.get('default_model', "gpt-4o-mini")
         
+        st.success("Conversation cleared!")
         st.rerun()
 
     def run(self):
-        st.markdown('<div class="chat-title">Your Finance Buddy</div>', unsafe_allow_html=True)
+        st.title("Your Finance Buddy")
         
         col1, col2, col3 = st.columns([6, 1, 1])
         with col3:
@@ -282,7 +125,3 @@ class ChatbotApp:
             self.display_chat_messages()
         
         self.handle_user_input()
-
-if __name__ == "__main__":
-    app = ChatbotApp()
-    app.run()

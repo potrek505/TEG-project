@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from supabase import create_client
-from src.supabase_tools import create_query_supabase_tool
+from src.tools.supabase_tools import create_query_supabase_tool
 
 class OpenAIService:
     """Service class for interacting with OpenAI API"""

@@ -1,35 +1,36 @@
+from flask import Flask, request, jsonify
 import os
-from flask import Flask, jsonify, request
 from dotenv import load_dotenv
-from src.call_ai_service import call_ai_service
+from src.openai_service import OpenAIService
 
 load_dotenv()
 
 app = Flask(__name__)
 
+
+ai_service = OpenAIService(
+    api_key=os.environ.get('OPENAI_API_KEY'),
+    supabase_url=os.environ.get('SUPABASE_URL'),
+    supabase_key=os.environ.get('SUPABASE_KEY')
+)
+
 @app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "healthy", "service": "backend"})
+    return jsonify({"status": "healthy", "service": "ai"})
 
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
         data = request.get_json()
         message = data.get('message')
-        user_id = data.get('user_id', 'anonymous')
         
         if not message:
             return jsonify({"error": "Message is required"}), 400
         
-        # Call AI service
-        ai_response = call_ai_service('chat', {"message": message})
+        response = ai_service.get_agent_response(message)
         
-        if "error" in ai_response:
-            return jsonify(ai_response), 500
-                
         return jsonify({
-            "response": ai_response.get("response"),
-            "user_id": user_id,
+            "response": response,
             "status": "success"
         })
         
@@ -37,4 +38,4 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('BACKEND_PORT')), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('AI_PORT')), debug=True)
