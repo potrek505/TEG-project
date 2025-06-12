@@ -1,6 +1,7 @@
 import subprocess
 import time
 import os
+from dotenv import load_dotenv
 
 def start_project():
     project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -8,27 +9,27 @@ def start_project():
     frontend_dir = os.path.join(project_dir, "frontend")
     ai_dir = os.path.join(project_dir, "ai")
     
-    # Start AI service first
+    load_dotenv()
+    
     print("Starting AI service...")
     ai_process = subprocess.Popen(
-        ["python", "app.py"],
+        ["uv", "run", "python", "app.py"],
         cwd=ai_dir,
         stdout=None,
         stderr=None,
         text=True
     )
     
-    time.sleep(3)  # AI needs time to load models
+    time.sleep(3)
     
     if ai_process.poll() is not None:
         print("ERROR: AI service failed to start!")
         return
-    print("✓ AI service started on port 5001")
+    print(f"✓ AI service started on port {os.environ.get('AI_PORT')}")
     
-    # Start backend
     print("Starting backend...")
     backend_process = subprocess.Popen(
-        ["python", "app.py"], 
+        ["uv", "run", "python", "app.py"], 
         cwd=backend_dir,
         stdout=None,  
         stderr=None,
@@ -41,12 +42,11 @@ def start_project():
         print("ERROR: Backend failed to start!")
         ai_process.terminate()
         return
-    print("✓ Backend started on port 5000")
+    print(f"✓ Backend started on port {os.environ.get('BACKEND_PORT')}")
     
-    # Start frontend
     print("Starting frontend...")
     frontend_process = subprocess.Popen(
-        ["streamlit", "run", "app.py"], 
+        ["uv", "run", "streamlit", "run", "app.py", "--server.port", os.environ.get('FRONTEND_PORT')], 
         cwd=frontend_dir,
         stdout=None,
         stderr=None,
@@ -62,9 +62,9 @@ def start_project():
         return
     print("✓ Frontend started")
     print("\n🚀 All services running!")
-    print("Frontend: http://localhost:8501")
-    print("Backend API: http://localhost:5000") 
-    print("AI Service: http://localhost:5001")
+    print(f"Frontend: http://localhost:{os.environ.get('FRONTEND_PORT')}")
+    print(f"Backend API: http://localhost:{os.environ.get('BACKEND_PORT')}")
+    print(f"AI Service: http://localhost:{os.environ.get('AI_PORT')}")
     
     try:
         while True:
