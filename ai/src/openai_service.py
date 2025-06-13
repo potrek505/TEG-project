@@ -9,29 +9,17 @@ from src.tools.supabase_tools import create_query_supabase_tool
 class OpenAIService:
     """Service class for interacting with OpenAI API"""
     
-    def __init__(self, api_key, default_model="gpt-4o-mini", default_temperature=0.7,
-                 supabase_url=None, supabase_key=None):
-        """
-        Initialize the OpenAI service
-        
-        Args:
-            api_key (str): OpenAI API key
-            default_model (str): Default model to use
-            default_temperature (float): Default temperature setting
-            supabase_url (str, optional): URL to Supabase instance
-            supabase_key (str, optional): Supabase API key
-        """
+    def __init__(self, api_key, default_model, default_temperature,
+                 supabase_url, supabase_key):
         self.api_key = api_key
         self.default_model = default_model
         self.default_temperature = default_temperature
         self.supabase_url = supabase_url
         self.supabase_key = supabase_key
-        self.supabase_client = None
+        self.supabase_client = create_client(supabase_url, supabase_key)
         self.memory = ConversationBufferMemory(return_messages=True)
 
-        if supabase_url and supabase_key:
-            self.supabase_client = create_client(supabase_url, supabase_key)
-        
+    
     def clear_conversation(self):
         self.memory.clear()
     

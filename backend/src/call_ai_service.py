@@ -1,15 +1,37 @@
-import requests
 import os
+import requests
+
+AI_SERVICE_URL = os.environ.get('AI_SERVICE_URL')
 
 def call_ai_service(endpoint, data):
-    """Call AI service via HTTP"""
+    """
+    Wywołuje usługę AI
+    """
     try:
-        ai_service_url = os.environ.get('AI_SERVICE_URL', f'http://localhost:{os.environ.get("AI_PORT")}')
-        response = requests.post(f"{ai_service_url}/{endpoint}", json=data, timeout=30)
-        
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return {"error": f"AI service error: {response.status_code}"}
+        if endpoint == 'clear':
+            response = requests.post(f"{AI_SERVICE_URL}/clear")
+            response.raise_for_status()
+            return {"status": "cleared", "success": True}
+            
+        elif endpoint == 'chat':
+            message = data.get('message', '')
+            session_id = data.get('session_id')
+            
+            response = requests.post(
+                f"{AI_SERVICE_URL}/chat",
+                json={"message": message}
+            )
+            
+            response.raise_for_status()
+            
+            response_data = response.json()
+            
+            return {
+                "response": response_data.get("response"),
+                "session_id": session_id
+            }
+            
     except requests.exceptions.RequestException as e:
-        return {"error": f"AI service unavailable: {str(e)}"}
+        return {"error": f"AI service communication error: {str(e)}"}
+    except Exception as e:
+        return {"error": f"AI service error: {str(e)}"}
