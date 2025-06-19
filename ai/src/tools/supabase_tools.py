@@ -1,4 +1,5 @@
 from langchain_core.tools import tool
+import json
 
 def create_query_supabase_tool(supabase_client):
     @tool
@@ -27,14 +28,14 @@ def create_query_supabase_tool(supabase_client):
             
             if query_type.lower() == "all":
                 result = supabase_client.table(table_name).select("*").execute()
-                return str(result.data)
+                return json.dumps(result.data)
             
             elif query_type.lower() == "limit":
                 if len(parts) < 3:
                     return "Missing limit value. Use 'table_name:limit:n'."
                 limit = int(parts[2].strip())
                 result = supabase_client.table(table_name).select("*").limit(limit).execute()
-                return str(result.data)
+                return json.dumps(result.data)
             
             else:
                 if len(parts) < 3:
@@ -53,7 +54,7 @@ def create_query_supabase_tool(supabase_client):
                     return f"Column '{column}' does not exist in table '{table_name}'. Allowed columns are: {', '.join(allowed_columns)}"
                 
                 result = supabase_client.table(table_name).select("*").eq(column, value).execute()
-                return str(result.data)
+                return json.dumps(result.data)
         
         except Exception as e:
             return f"Error querying Supabase: {e}"

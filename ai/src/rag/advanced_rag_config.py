@@ -1,6 +1,11 @@
-from basic_rag import BasicRAG
-from langchain.chains import LLMChain, create_stuff_documents_chain, create_retrieval_chain
+from .basic_rag import BasicRAG
+from langchain.chains import LLMChain, create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import PromptTemplate
+from langchain.schema import BaseRetriever
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
+import json
 
 class AdaptiveRAG:
     def __init__(self, llm, retriever, vectorstore):
@@ -28,128 +33,170 @@ class AdaptiveRAG:
         self.retriever = retriever
         self.vectorstore = vectorstore
         
-        self.analysis_chain = LLMChain(llm=llm, prompt=self.analysis_prompt)
-        self.basic_rag = BasicRAG(llm, retriever)
-
-    def query(self, query):
-        analysis_result = self.analysis_chain.run(question=query)
+        # Szablon do analizy pytania
+        self.analysis_template = """
+        Przeanalizuj następujące pytanie i określ najlepszą strategię wyszukiwania:
         
-        # Parse the analysis result
-        complexity = "SIMPLE"
-        decomposition = []
-        keywords = []
+        Pytanie: {question}
         
-        for line in analysis_result.split("\n"):
-            if line.startswith("COMPLEXITY:"):
-                complexity = line.replace("COMPLEXITY:", "").strip()
-            elif line.startswith("DECOMPOSITION:"):
-                decomp_text = line.replace("DECOMPOSITION:", "").strip()
-                if decomp_text != "NONE":
-                    decomposition = [q.strip() for q in decomp_text.split(",")]
-            elif line.startswith("KEYWORDS:"):
-                keywords_text = line.replace("KEYWORDS:", "").strip()
-                keywords = [k.strip() for k in keywords_text.split(",")]
+        Odpowiedz w formacie JSON:
+        {{
+            "strategy": "simple|complex|multi_step",
+            "search_terms": ["termin1", "termin2"],
+            "complexity": "low|medium|high"
+        }}
+        """
         
-        # Step 2: Adjust retrieval strategy based on analysis
-        if complexity == "SIMPLE":
-            # For simple questions, use standard retrieval
-            result = self.basic_rag(query, self.llm, self.retriever)
-            result["strategy"] = "Standard retrieval for a simple question"
-            return result
+        self.analysis_prompt = PromptTemplate(
+            template=self.analysis_template,
+            input_variables=["question"]
+        )
         
-        elif decomposition and len(decomposition) > 0:
-            # For complex questions that can be decomposed, retrieve for each sub-question
-            sub_results = []
+        # Szablon do finalnej odpowiedzi
+        self.answer_template = """
+        Na podstawie następujących dokumentów odpowiedz na pytanie użytkownika:
+        
+        Pytanie: {question}
+        
+        Dokumenty:
+        {context}
+        
+        Odpowiedź:
+        """
+        
+        self.answer_prompt = PromptTemplate(
+            template=self.answer_template,
+            input_variables=["question", "context"]
+        )
+    
+    def query(self, query_text: str) -> dict:
+        """
+        Główna metoda do zapytań RAG
+        """
+        try:
+            print(f"[DEBUG] AdaptiveRAG: Przetwarzam pytanie: {query_text}")
             
-            for sub_q in decomposition:
-                # Get documents for each sub-question
-                sub_docs = self.retriever.get_relevant_documents(sub_q)
-                sub_results.append({
-                    "sub_question": sub_q,
-                    "documents": sub_docs
-                })
+            # Krok 1: Analiza pytania
+            analysis_result = self._analyze_question(query_text)
+            print(f"[DEBUG] AdaptiveRAG: Analiza: {analysis_result}")
             
-            # Combine all retrieved documents
-            all_docs = []
-            for sub_result in sub_results:
-                all_docs.extend(sub_result["documents"])
+            # Krok 2: Wyszukaj dokumenty
+            documents = self._retrieve_documents(query_text, analysis_result)
+            print(f"[DEBUG] AdaptiveRAG: Znaleziono {len(documents)} dokumentów")
             
-            # Remove duplicates while preserving order
-            seen_content = set()
-            unique_docs = []
-            for doc in all_docs:
-                if doc.page_content not in seen_content:
-                    seen_content.add(doc.page_content)
-                    unique_docs.append(doc)
-            
-            # Use a more detailed prompt that acknowledges the decomposition
-            prompt = PromptTemplate.from_template(
-                """
-                I've broken down your complex question into sub-questions and retrieved relevant information for each.
-                
-                Original question: {question}
-                
-                Sub-questions analyzed:
-                {sub_questions}
-                
-                Please answer the original question based on this context:
-                {context}
-                
-                Provide a comprehensive answer that addresses all aspects of the original question.
-                """
-            )
-            
-            document_chain = create_stuff_documents_chain(
-                self.llm, 
-                prompt
-            )
-            
-            # Create a context string to pass to the LLM
-            context = "\n\n".join([doc.page_content for doc in unique_docs[:6]])  # Limit to 6 docs
-            sub_questions_text = "\n".join([f"- {sq}" for sq in decomposition])
-            
-            # Generate answer
-            answer = document_chain.invoke(
-                prompt.format(
-                    question=query, 
-                    sub_questions=sub_questions_text, 
-                    context=context
-                )
-            ).content
+            # Krok 3: Generuj odpowiedź
+            answer = self._generate_answer(query_text, documents)
             
             return {
-                "query": query,
                 "answer": answer,
-                "source_documents": unique_docs,
-                "strategy": f"Decomposed into {len(decomposition)} sub-questions"
+                "strategy": analysis_result.get("strategy", "simple"),
+                "source_documents_count": len(documents),
+                "complexity": analysis_result.get("complexity", "medium")
             }
-        
-        else:
-            # For other complex questions, use hybrid search with more documents
-            enhanced_retriever = self.vectorstore.as_retriever(search_kwargs={"k": 6})
             
-            # Create a standard RAG prompt but request a more comprehensive answer
-            prompt = PromptTemplate.from_template(
-                """
-                Answer the following complex question based on the provided context:
-                
-                Context:
-                {context}
-                
-                Question: {question}
-                
-                Provide a comprehensive and detailed answer.
-                """
+        except Exception as e:
+            print(f"[DEBUG] AdaptiveRAG: Błąd: {e}")
+            return {
+                "answer": f"Wystąpił błąd podczas przetwarzania: {str(e)}",
+                "strategy": "error",
+                "source_documents_count": 0,
+                "complexity": "error"
+            }
+    
+    def _analyze_question(self, question: str) -> dict:
+        """Analizuje pytanie i określa strategię"""
+        try:
+            # Użyj invoke zamiast run
+            analysis_response = self.llm.invoke(
+                self.analysis_prompt.format(question=question)
             )
             
-            document_chain = create_stuff_documents_chain(self.llm, prompt)
-            retrieval_chain = create_retrieval_chain(enhanced_retriever, document_chain)
+            # Spróbuj sparsować JSON
+            try:
+                if hasattr(analysis_response, 'content'):
+                    content = analysis_response.content
+                else:
+                    content = str(analysis_response)
+                
+                # Znajdź JSON w odpowiedzi
+                import re
+                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group())
+                else:
+                    return {"strategy": "simple", "search_terms": [question], "complexity": "medium"}
+                    
+            except json.JSONDecodeError:
+                return {"strategy": "simple", "search_terms": [question], "complexity": "medium"}
+                
+        except Exception as e:
+            print(f"[DEBUG] Błąd analizy pytania: {e}")
+            return {"strategy": "simple", "search_terms": [question], "complexity": "medium"}
+    
+    def _retrieve_documents(self, query: str, analysis: dict):
+        """Pobiera dokumenty na podstawie analizy"""
+        try:
+            strategy = analysis.get("strategy", "simple")
             
-            result = retrieval_chain.invoke({"query": query})
+            if strategy == "simple":
+                # Proste wyszukiwanie
+                docs = self.retriever.invoke(query)
+                return docs[:5]  # Ogranicz do 5 dokumentów
+                
+            elif strategy == "complex":
+                # Złożone wyszukiwanie z wieloma terminami
+                search_terms = analysis.get("search_terms", [query])
+                all_docs = []
+                
+                for term in search_terms[:3]:  # Max 3 terminy
+                    docs = self.retriever.invoke(term)
+                    all_docs.extend(docs[:100])  # Max 3 docs per term
+                
+                # Usuń duplikaty na podstawie page_content
+                unique_docs = []
+                seen_content = set()
+                for doc in all_docs:
+                    if doc.page_content not in seen_content:
+                        unique_docs.append(doc)
+                        seen_content.add(doc.page_content)
+                
+                return unique_docs[:5]
+                
+            else:  # multi_step
+                # Multi-step reasoning
+                docs = self.retriever.invoke(query)
+                return docs[:7]  # Więcej dokumentów dla złożonych pytań
+                
+        except Exception as e:
+            print(f"[DEBUG] Błąd podczas pobierania dokumentów: {e}")
+            # Fallback - podstawowe wyszukiwanie
+            try:
+                return self.retriever.invoke(query)[:3]
+            except:
+                return []
+    
+    def _generate_answer(self, question: str, documents) -> str:
+        """Generuje finalną odpowiedź"""
+        try:
+            # Sformatuj dokumenty
+            context = "\n\n".join([
+                f"Dokument {i+1}:\n{doc.page_content}" 
+                for i, doc in enumerate(documents[:5])
+            ])
             
-            return {
-                "query": query,
-                "answer": result["answer"],
-                "source_documents": result["context"],
-                "strategy": "Enhanced retrieval for a complex question"
-            }
+            if not context.strip():
+                return "Nie znalazłem odpowiednich informacji w kontekście transakcji."
+            
+            # Generuj odpowiedź
+            response = self.llm.invoke(
+                self.answer_prompt.format(question=question, context=context)
+            )
+            
+            if hasattr(response, 'content'):
+                return response.content
+            else:
+                return str(response)
+                
+        except Exception as e:
+            print(f"[DEBUG] Błąd podczas generowania odpowiedzi: {e}")
+            return f"Nie udało się wygenerować odpowiedzi: {str(e)}"

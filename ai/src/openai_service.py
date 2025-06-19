@@ -19,6 +19,12 @@ class OpenAIService:
         self.supabase_client = create_client(supabase_url, supabase_key)
         self.memory = ConversationBufferMemory(return_messages=True)
 
+        self.llm = ChatOpenAI(
+            api_key=self.api_key,
+            model=self.default_model,
+            temperature=self.default_temperature
+        )
+
     
     def clear_conversation(self):
         self.memory.clear()
@@ -39,12 +45,6 @@ class OpenAIService:
         try:
             model = model or self.default_model
             temperature = temperature or self.default_temperature
-            
-            llm = ChatOpenAI(
-                api_key=self.api_key,
-                model=model,
-                temperature=temperature
-            )
             
             messages = []
             system_message = """
@@ -102,7 +102,7 @@ class OpenAIService:
             )
         
             agent_executor = AgentExecutor.from_agent_and_tools(
-                agent=create_react_agent(llm, tools, prompt),
+                agent=create_react_agent(self.llm, tools, prompt),
                 tools=tools,
                 verbose=True,
                 handle_parsing_errors=True,
