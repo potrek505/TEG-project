@@ -105,7 +105,7 @@ builder.add_edge("create_rag", "RAG")
 builder.add_edge("RAG", END)
 builder.add_edge("unnecessary", END)
 
-graph = builder.compile()
+#graph = builder.compile()
 
 agent_instance = OpenAIService(
     api_key=os.environ.get('OPENAI_API_KEY'),
