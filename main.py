@@ -13,8 +13,8 @@ def start_project():
     
     print("Starting AI service...")
     ai_process = subprocess.Popen(
-        ["uv", "run", "python", "app.py"],
-        cwd=ai_dir,
+        ["uv", "run", "python", "ai/app.py"],
+        cwd=project_dir,  # <-- changed from ai_dir
         stdout=None,
         stderr=None,
         text=True

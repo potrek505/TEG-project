@@ -1,5 +1,6 @@
-from langchain.chains import create_retrieval_chain, create_stuff_documents_chain
-from langchain_core.prompts import PromptTemplate
+from langchain.chains import LLMChain, create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.prompts import PromptTemplate
 
 class BasicRAG:
     def __init__(self, llm, retriever):
