@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict
-from src.openai_service import OpenAIService
+from ai.src.agents.SQL_Agent import OpenAIService
 import os
 from dotenv import load_dotenv
 
@@ -76,7 +76,7 @@ def agent_node(state):
             vectorstore = FAISS.from_documents(docs, embeddings)
             retriever = vectorstore.as_retriever()
 
-            from src.rag.advanced_rag_config import AdaptiveRAG
+            from src.rags.advanced_rag_config import AdaptiveRAG
             llm = agent.llm
             rag = AdaptiveRAG(llm, retriever, vectorstore)
 
