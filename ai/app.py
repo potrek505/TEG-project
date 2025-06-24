@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import os
 from dotenv import load_dotenv
-from src.openai_service import OpenAIService
+from ai.src.agents.SQL_Agent import OpenAIService
 #from src.dynamic_rag_graph import graph
 
 load_dotenv()
