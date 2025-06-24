@@ -1,4 +1,3 @@
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_community.utilities import SQLDatabase
@@ -6,7 +5,7 @@ from langchain_community.tools import QuerySQLDatabaseTool
 from src.agents.basic_agent import BasicAgent
 from dotenv import load_dotenv
 import os
-
+from table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
 
 load_dotenv()
 class SQL_Agent(BasicAgent):
@@ -14,6 +13,7 @@ class SQL_Agent(BasicAgent):
 
     def __init__(self, db_uri = os.environ.get("transations_db_uri")):
         db = SQLDatabase.from_uri(db_uri)
+        self.table_schema = ALL_TRANSACTIONS_TABLE_STRUCTURE
         super().__init__(tools=[QuerySQLDatabaseTool(db=db)])
 
     def get_agent_response(self, human_message):
@@ -21,30 +21,11 @@ class SQL_Agent(BasicAgent):
         Get a response using a ReAct agent with Supabase tools
         """
         try:
-            system_message = """
+            system_message = f"""
             You are a helpful assistant with access to a SQLite database. This database contains only one table: `all_transactions`.
             Always use only this table and its columns. Do not try to use or guess any other table or column names.
 
-            Table structure for `all_transactions`:
-            1. id - INTEGER (primary key)
-            2. account_id - TEXT - account identifier
-            3. transaction_id - TEXT - unique transaction ID
-            4. internal_transaction_id - TEXT - internal transaction ID
-            5. booking_date - TEXT - booking date (format: YYYY-MM-DD)
-            6. value_date - TEXT - value date (format: YYYY-MM-DD)
-            7. booking_date_time - TEXT - full date and time (ISO 8601)
-            8. amount - REAL - transaction amount (negative = expense, positive = income)
-            9. currency - TEXT - currency (e.g., 'PLN')
-            10. remittance_info_unstructured - TEXT - transaction description
-            11. remittance_info_array - TEXT - description as JSON array
-            12. creditor_name - TEXT - creditor name
-            13. creditor_iban - TEXT - creditor IBAN
-            14. debtor_name - TEXT - debtor name
-            15. debtor_iban - TEXT - debtor IBAN
-            16. balance_after_amount - REAL - balance after transaction
-            17. balance_after_currency - TEXT - balance currency
-            18. balance_after_type - TEXT - balance type (e.g., 'interimBooked')
-            19. raw_data - TEXT - full transaction data as JSON
+            {self.table_schema}
 
             Important conventions:
             - Negative amounts mean expenses, positive amounts mean income.
