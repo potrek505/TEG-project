@@ -11,7 +11,14 @@ wheels/
 
 # Environment variables
 .env
+ai/.env
+backend/.env
+frontend/.env
 
 # Database files
 backend/conversations.db
 all_transactions.db
+
+# Logs
+logs/
+
