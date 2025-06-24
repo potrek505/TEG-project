@@ -4,7 +4,7 @@ import sys
 
 # Import shared logging system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from shared_logging import get_logger
+from config.logging import get_logger
 
 logger = get_logger(__name__)
 

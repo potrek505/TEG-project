@@ -1,0 +1,43 @@
+{
+  "project": {
+    "name": "TEG - Transaction Explorer with GraphRAG",
+    "version": "1.0.0",
+    "environment": "development"
+  },
+  "services": {
+    "ai": {
+      "port": 50001,
+      "startup_delay": 3,
+      "health_check_interval": 30
+    },
+    "backend": {
+      "port": 50000,
+      "startup_delay": 2,
+      "health_check_interval": 30
+    },
+    "frontend": {
+      "port": 8501,
+      "startup_delay": 2,
+      "health_check_interval": 30
+    }
+  },
+  "urls": {
+    "ai_service": "http://localhost:50001",
+    "backend_service": "http://localhost:50000",
+    "frontend_url": "http://localhost:8501"
+  },
+  "database": {
+    "transactions_db": "all_transactions.db",
+    "transactions_db_uri": "sqlite:///all_transactions.db"
+  },
+  "deployment": {
+    "use_docker": false,
+    "auto_restart": true,
+    "log_level": "INFO"
+  },
+  "openai": {
+    "api_key": "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",
+    "default_model": "gpt-4o-mini",
+    "default_temperature": 0.7
+  }
+}

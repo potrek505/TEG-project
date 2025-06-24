@@ -4,24 +4,37 @@ import requests
 
 # Import shared logging system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from shared_logging import get_logger
+from config.logging import get_logger
 
 logger = get_logger(__name__)
 
-AI_SERVICE_URL = os.getenv("AI_SERVICE_URL")
-
-def call_ai_service(endpoint, data):
+def call_ai_service(endpoint, data, config=None):
     """
-    Wywołuje usługę AI z właściwą obsługą błędów
+    Wywołuje usługę AI z właściwą obsługą błędów i konfiguracją
     """
-    if not AI_SERVICE_URL:
-        logger.error("AI_SERVICE_URL not configured")
+    # Get AI service configuration
+    if config:
+        ai_service_url = config.get('url', os.getenv("AI_SERVICE_URL"))
+        timeout = config.get('timeout', 60)
+        max_retries = config.get('max_retries', 3)
+        retry_delay = config.get('retry_delay', 2)
+    else:
+        ai_service_url = os.getenv("AI_SERVICE_URL")
+        timeout = 60
+        max_retries = 3
+        retry_delay = 2
+    
+    if not ai_service_url:
+        logger.error("AI service URL not configured")
         return {"error": "AI service configuration missing"}
+    
+    # Remove any trailing slash
+    ai_service_url = ai_service_url.rstrip('/')
         
     try:
         if endpoint == 'clear':
             logger.info("Calling AI service to clear conversation")
-            response = requests.post(f"{AI_SERVICE_URL}/clear", json={}, timeout=30)
+            response = requests.post(f"{ai_service_url}/clear", json={}, timeout=timeout)
             response.raise_for_status()
             return response.json()
             
@@ -35,20 +48,30 @@ def call_ai_service(endpoint, data):
             
             logger.info(f"Sending chat message to AI service for session {session_id[:8] if session_id else 'unknown'}")
             
-            response = requests.post(
-                f"{AI_SERVICE_URL}/chat",
-                json={"message": message, "session_id": session_id},
-                timeout=60
-            )
-            
-            response.raise_for_status()
-            
-            response_data = response.json()
-            
-            return {
-                "response": response_data.get("response"),
-                "session_id": session_id
-            }
+            # Retry logic
+            for attempt in range(max_retries):
+                try:
+                    response = requests.post(
+                        f"{ai_service_url}/chat",
+                        json={"message": message, "session_id": session_id},
+                        timeout=timeout
+                    )
+                    
+                    response.raise_for_status()
+                    
+                    response_data = response.json()
+                    
+                    return {
+                        "response": response_data.get("response"),
+                        "session_id": session_id
+                    }
+                except requests.exceptions.RequestException as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"AI service request failed (attempt {attempt + 1}), retrying in {retry_delay}s: {str(e)}")
+                        import time
+                        time.sleep(retry_delay)
+                    else:
+                        raise
         else:
             logger.error(f"Unknown endpoint: {endpoint}")
             return {"error": f"Unknown endpoint: {endpoint}"}

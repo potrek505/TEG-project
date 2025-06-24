@@ -8,16 +8,33 @@ from src.database import ConversationDB
 
 # Import shared logging system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shared_logging import setup_logging
+from config.logging import setup_logging
+
+# Import config manager
+from backend.config.config_manager import get_backend_config
 
 # Konfiguracja loggera używając shared_logging
 logger = setup_logging("backend")
+
+# Initialize config manager
+config_manager = get_backend_config()
 
 load_dotenv()
 
 app = Flask(__name__)
 
+# Configure Flask app with config manager
+server_config = config_manager.get("server")
+app.config.update({
+    'DEBUG': server_config.get('debug', False) if server_config else False
+})
+
 try:
+    # Get database configuration
+    db_config = config_manager.get("database")
+    conversations_path = db_config.get('conversations_path', './conversations.db') if db_config else './conversations.db'
+    logger.info(f"Database configuration loaded: {conversations_path}")
+    
     db = ConversationDB()
     logger.info("Database connection established successfully")
 except Exception as e:
@@ -26,11 +43,16 @@ except Exception as e:
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Enhanced health check with configuration status."""
     db_status = "healthy" if db else "unhealthy"
+    ai_service_config = config_manager.get("ai_service")
+    
     return jsonify({
         "status": "healthy", 
         "service": "backend",
-        "database": db_status
+        "database": db_status,
+        "config_loaded": True,
+        "ai_service_url": ai_service_config.get('url', 'http://ai:5001') if ai_service_config else 'http://ai:5001'
     })
 
 @app.route('/chat', methods=['POST'])
@@ -52,12 +74,15 @@ def chat():
             logger.warning(f"Empty message received from session {session_id}")
             return jsonify({"error": "Message is required and cannot be empty"}), 400
         
+        # Get AI service configuration
+        ai_service_config = config_manager.get("ai_service")
+        
         logger.info(f"Processing chat message for session {session_id[:8]}...")
         
         ai_response = call_ai_service('chat', {
             "message": message,
             "session_id": session_id
-        })
+        }, config=ai_service_config)
         
         if "error" in ai_response:
             logger.error(f"AI service error: {ai_response['error']}")
@@ -199,6 +224,36 @@ def reset_database():
             "status": "error", 
             "message": "Failed to reset database due to internal error"
         }), 550
+
+# Configuration endpoints
+@app.route('/config', methods=['GET'])
+def get_backend_config():
+    """Get current backend configuration."""
+    try:
+        return jsonify({
+            "success": True,
+            "data": {
+                "server": config_manager.get("server", default={}),
+                "ai_service": config_manager.get("ai_service", default={}),
+                "database": config_manager.get("database", default={}),
+                "cors": config_manager.get("cors", default={}),
+                "security": config_manager.get("security", default={})
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting config: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/config/reload', methods=['POST'])
+def reload_backend_config():
+    """Reload backend configuration."""
+    try:
+        config_manager.reload_config()
+        logger.info("Backend configuration reloaded")
+        return jsonify({"success": True, "message": "Configuration reloaded"})
+    except Exception as e:
+        logger.error(f"Error reloading config: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     try:

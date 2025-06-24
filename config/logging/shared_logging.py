@@ -20,7 +20,7 @@ def setup_logging(service_name="teg-project", log_level=logging.INFO, max_bytes=
     """
     
     # Pobierz katalog główny projektu
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).parent.parent.parent
     log_dir = project_root / "logs"
     log_dir.mkdir(exist_ok=True)
     

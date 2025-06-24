@@ -9,7 +9,7 @@ from pathlib import Path
 
 def clear_logs():
     """Wyczyść wszystkie pliki logów"""
-    log_dir = Path(__file__).parent / "logs"
+    log_dir = Path(__file__).parent.parent.parent / "logs"
     log_files = glob.glob(str(log_dir / "*.log"))
     
     for log_file in log_files:
@@ -23,7 +23,7 @@ def clear_logs():
 
 def show_logs(service=None, errors_only=False, lines=50):
     """Pokaż ostatnie wpisy logów"""
-    log_dir = Path(__file__).parent / "logs"
+    log_dir = Path(__file__).parent.parent.parent / "logs"
     
     if errors_only:
         log_file = log_dir / "errors.log"
@@ -41,7 +41,7 @@ def show_logs(service=None, errors_only=False, lines=50):
 
 def follow_logs(service=None, errors_only=False):
     """Śledź pliki logów w czasie rzeczywistym"""
-    log_dir = Path(__file__).parent / "logs"
+    log_dir = Path(__file__).parent.parent.parent / "logs"
     
     if errors_only:
         log_file = log_dir / "errors.log"
@@ -59,7 +59,7 @@ def follow_logs(service=None, errors_only=False):
 
 def list_logs():
     """Wylistuj wszystkie dostępne pliki logów"""
-    log_dir = Path(__file__).parent / "logs"
+    log_dir = Path(__file__).parent.parent.parent / "logs"
     log_files = glob.glob(str(log_dir / "*.log"))
     
     if not log_files:
