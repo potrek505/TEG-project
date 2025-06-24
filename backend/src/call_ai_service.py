@@ -9,9 +9,9 @@ def call_ai_service(endpoint, data):
     """
     try:
         if endpoint == 'clear':
-            response = requests.post(f"{AI_SERVICE_URL}/clear")
+            response = requests.post(f"{AI_SERVICE_URL}/clear", json={})
             response.raise_for_status()
-            return {"status": "cleared", "success": True}
+            return response.json()
             
         elif endpoint == 'chat':
             message = data.get('message', '')

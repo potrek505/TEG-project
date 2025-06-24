@@ -5,7 +5,7 @@ from langchain_community.tools import QuerySQLDatabaseTool
 from src.agents.basic_agent import BasicAgent
 from dotenv import load_dotenv
 import os
-from table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
+from src.agents.table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
 
 load_dotenv()
 class SQL_Agent(BasicAgent):
@@ -40,7 +40,6 @@ class SQL_Agent(BasicAgent):
             prompt = PromptTemplate.from_template(
                 system_message + "\n\n"
                 "You are a helpful assistant. Use the tools below to assist you in answering the question.\n\n"
-                "Chat history:\n{history}\n\n"
                 "Available tools:\n{tool_names}\n\n"
                 "Tools:\n{tools}\n\n"
                 "When providing a response, follow this format:\n"
@@ -57,7 +56,6 @@ class SQL_Agent(BasicAgent):
                 tools=self.tools,
                 verbose=True,
                 handle_parsing_errors=True,
-                memory=self.memory 
             )
         
             response = agent_executor.invoke({"input": human_message})

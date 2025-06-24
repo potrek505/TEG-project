@@ -1,5 +1,5 @@
 from src.agents.basic_agent import BasicAgent
-from table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
+from src.agents.table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
 
 class SQLQueryEvaluatorAgent(BasicAgent):
     def __init__(self):
@@ -17,15 +17,3 @@ class SQLQueryEvaluatorAgent(BasicAgent):
         )
         response = self.llm.invoke(system_message)
         return response.content
-
-
-if __name__ == "__main__":
-    agent = SQLQueryEvaluatorAgent()
-    
-    # Przykład 1: Pytanie, które może wygenerować ciężkie zapytanie
-    question1 = "Show me all transactions."
-    print("Test 1:", agent.is_query_heavy(question1))
-    
-    # Przykład 2: Pytanie, które powinno wygenerować lekkie zapytanie
-    question2 = "Show me the last 5 transactions."
-    print("Test 2:", agent.is_query_heavy(question2))

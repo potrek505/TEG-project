@@ -1,22 +1,13 @@
 from flask import Flask, request, jsonify
 import os
 from dotenv import load_dotenv
-from ai.src.agents.SQL_Agent import OpenAIService
-#from src.dynamic_rag_graph import graph
+from src.graphs.dynamic_rag_graph import get_dynamic_rag_graph
 
 load_dotenv()
 
 app = Flask(__name__)
 
-
-ai_service = OpenAIService(
-    api_key=os.environ.get('OPENAI_API_KEY'),
-    default_model=os.environ.get('DEFAULT_MODEL', 'gpt-4o-mini'),
-    default_temperature=float(os.environ.get('DEFAULT_TEMPERATURE', 0.7)),
-    supabase_url=os.environ.get('SUPABASE_URL'),
-    supabase_key=os.environ.get('SUPABASE_KEY')
-)
-
+graph = get_dynamic_rag_graph()
 session_states = {}
 
 @app.route('/health', methods=['GET'])
@@ -31,29 +22,43 @@ def chat():
     if not message:
         return jsonify({"error": "Message is required"}), 410
 
+    # Pobierz poprzedni stan lub zainicjalizuj nowy
     prev_state = session_states.get(session_id, {
-        "graph_state": "We meet again",
+        "graph_state": "START",
         "rag": None,
-        "agent": ai_service,
+        "sql_agent": None,
+        "evaluate_sql_statement_agent": None,
+        "user_message": None,
+        "agent_response": None,
+        "rag_response": None,
+        "is_sql_query_heavy": None,
     })
-    prev_state["user_message"] = message  # <-- KLUCZOWE!
+    prev_state["user_message"] = message  # Aktualizuj wiadomość użytkownika
 
+    # Przetwórz stan przez graf
     new_state = graph.invoke(prev_state)
     session_states[session_id] = new_state
 
     response = new_state.get("rag_response") or new_state.get("agent_response") or "Brak odpowiedzi"
     return jsonify({"response": response, "status": "success"})
-        
-    #except Exception as e:
-    #    return jsonify({"error": str(e)}), 560
 
 @app.route('/clear', methods=['POST'])
 def clear_conversation():
     try:
-        ai_service.clear_conversation()
-        return jsonify({"status": "conversation cleared", "success": True})
+        data = request.get_json() or {}
+        session_id = data.get('session_id', 'default')
+        print(f"[DEBUG] Clear called for session_id: {session_id}")
+        # Usuń stan tej sesji jeśli istnieje
+        if session_id in session_states:
+            del session_states[session_id]
+        return jsonify({
+            "status": "conversation cleared",
+            "success": True,
+            "session_id": session_id
+        })
     except Exception as e:
-        return jsonify({"error": str(e)}), 570
+        print(f"[ERROR] /clear failed: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('AI_PORT')), debug=True)
