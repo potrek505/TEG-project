@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  ai:
+    build:
+      context: ./ai
+    ports:
+      - "50000:5001"
+    restart: unless-stopped
+    volumes:
+      - ./all_transactions.db:/app/all_transactions.db
+    env_file:
+      - ./ai/.env
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "50001:5000"
+    depends_on:
+      - ai
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "50002:8501"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    env_file:
+      - ./frontend/.env
