@@ -1,10 +1,10 @@
 import os
 import sys
 
-# Dodaj ścieżkę do głównego katalogu projektu przed importami
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Użyj lokalnego systemu Backend
+backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if backend_root not in sys.path:
+    sys.path.insert(0, backend_root)
 
 import sqlite3
 import datetime

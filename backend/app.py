@@ -1,6 +1,7 @@
 import os
 import uuid
 import sys
+import requests
 from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from src.call_ai_service import call_ai_service
@@ -229,17 +230,35 @@ def reset_database():
 # Configuration endpoints
 @app.route('/config', methods=['GET'])
 def get_backend_config():
-    """Get current backend configuration."""
+    """Get current backend configuration with AI status."""
     try:
+        # Get backend config
+        backend_data = {
+            "server": config_manager.get("server", default={}),
+            "ai_service": config_manager.get("ai_service", default={}),
+            "database": config_manager.get("database", default={}),
+            "cors": config_manager.get("cors", default={}),
+            "security": config_manager.get("security", default={})
+        }
+        
+        # Try to get AI config as well
+        try:
+            ai_service_config = config_manager.get("ai_service")
+            ai_service_url = ai_service_config.get('url', os.getenv("AI_SERVICE_URL", "http://localhost:50001"))
+            ai_service_url = ai_service_url.rstrip('/')
+            
+            ai_response = requests.get(f"{ai_service_url}/config", timeout=5)
+            if ai_response.status_code == 200:
+                ai_config = ai_response.json()
+                # Add AI config to response
+                backend_data["ai_current"] = ai_config.get("data", {})
+        except Exception as ai_error:
+            logger.warning(f"Could not fetch AI config: {str(ai_error)}")
+            backend_data["ai_current"] = {}
+        
         return jsonify({
             "success": True,
-            "data": {
-                "server": config_manager.get("server", default={}),
-                "ai_service": config_manager.get("ai_service", default={}),
-                "database": config_manager.get("database", default={}),
-                "cors": config_manager.get("cors", default={}),
-                "security": config_manager.get("security", default={})
-            }
+            "data": backend_data
         })
     except Exception as e:
         logger.error(f"Error getting config: {str(e)}")
@@ -254,6 +273,59 @@ def reload_backend_config():
         return jsonify({"success": True, "message": "Configuration reloaded"})
     except Exception as e:
         logger.error(f"Error reloading config: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/config/ai-provider', methods=['POST'])
+def change_ai_provider():
+    """Change AI provider (OpenAI/Gemini)."""
+    try:
+        data = request.get_json()
+        if not data or 'provider' not in data:
+            return jsonify({"success": False, "error": "Provider not specified"}), 400
+        
+        provider = data['provider'].lower()
+        if provider not in ['openai', 'gemini']:
+            return jsonify({"success": False, "error": "Invalid provider. Use 'openai' or 'gemini'"}), 400
+        
+        # Get AI service configuration
+        ai_service_config = config_manager.get("ai_service")
+        
+        # Call AI service to change provider
+        from src.call_ai_service import change_ai_provider
+        result = change_ai_provider(provider, config=ai_service_config)
+        
+        if result.get("success"):
+            logger.info(f"AI provider changed to: {provider}")
+            return jsonify(result)
+        else:
+            logger.error(f"Failed to change AI provider: {result.get('error')}")
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error changing AI provider: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/config/ai', methods=['GET'])
+def get_ai_config():
+    """Get AI configuration from AI service."""
+    try:
+        # Get AI service configuration
+        ai_service_config = config_manager.get("ai_service")
+        ai_service_url = ai_service_config.get('url', os.getenv("AI_SERVICE_URL", "http://localhost:50001"))
+        
+        # Remove any trailing slash
+        ai_service_url = ai_service_url.rstrip('/')
+        
+        response = requests.get(f"{ai_service_url}/config", timeout=10)
+        if response.status_code == 200:
+            ai_config = response.json()
+            return jsonify(ai_config)
+        else:
+            logger.error(f"Failed to fetch AI config. Status: {response.status_code}")
+            return jsonify({"success": False, "error": "Failed to fetch AI config"}), 500
+            
+    except Exception as e:
+        logger.error(f"Error fetching AI config: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':

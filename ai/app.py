@@ -131,7 +131,9 @@ def chat():
             response = new_state.get("rag_response") or new_state.get("agent_response") or "Brak odpowiedzi"
             logger.info(f"Generated response for session {session_id}")
             
-            return jsonify({"response": response, "status": "success"})
+            response_json = {"response": response, "status": "success"}
+            logger.info(f"Sending response to backend for session {session_id}")
+            return jsonify(response_json)
             
         except Exception as graph_error:
             logger.error(f"Error processing graph for session {session_id}: {str(graph_error)}")
@@ -163,6 +165,93 @@ def clear_conversation():
     except Exception as e:
         logger.error(f"/clear failed: {str(e)}")
         return jsonify({"error": "Failed to clear conversation"}), 500
+
+@app.route('/config/provider', methods=['POST'])
+def change_provider():
+    """Change AI provider (OpenAI/Gemini)."""
+    try:
+        data = request.get_json()
+        if not data or 'provider' not in data:
+            return jsonify({"success": False, "error": "Provider not specified"}), 400
+        
+        provider = data['provider'].lower()
+        if provider not in ['openai', 'gemini']:
+            return jsonify({"success": False, "error": "Invalid provider. Use 'openai' or 'gemini'"}), 400
+        
+        # Update configuration
+        config_manager.set("llm", "provider", provider)
+        
+        # Set model based on provider
+        if provider == 'gemini':
+            model = config_manager.get("google_llm", "model", default="gemini-2.5-flash")
+            temp = config_manager.get("google_llm", "temperature", default=0.7)
+            config_manager.set("llm", "provider", "gemini")
+            config_manager.set("llm", "model", model)
+            config_manager.set("llm", "temperature", temp)
+        else:  # openai
+            model = config_manager.get("openai_llm", "model", default="gpt-4o-mini")
+            temp = config_manager.get("openai_llm", "temperature", default=0.7)
+            config_manager.set("llm", "provider", "openai")
+            config_manager.set("llm", "model", model)
+            config_manager.set("llm", "temperature", temp)
+        
+        # Save configuration
+        config_manager.save_config()
+        
+        # Clear session states to force recreation of agents with new provider
+        global session_states
+        session_states.clear()
+        logger.info("Session states cleared - agents will be recreated with new provider")
+        
+        logger.info(f"AI provider changed to: {provider}")
+        return jsonify({
+            "success": True, 
+            "message": f"Provider changed to {provider}. All sessions cleared.",
+            "current_config": {
+                "provider": config_manager.get("llm", "provider"),
+                "model": config_manager.get("llm", "model"),
+                "temperature": config_manager.get("llm", "temperature")
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error changing provider: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+def update_env_file(key, value):
+    """Update or add a key-value pair in the .env file."""
+    try:
+        env_file_path = config_manager.env_file
+        lines = []
+        key_found = False
+        
+        # Read existing lines if file exists
+        if env_file_path.exists():
+            with open(env_file_path, 'r') as f:
+                lines = f.readlines()
+        
+        # Update existing key or mark that it wasn't found
+        for i, line in enumerate(lines):
+            if line.strip().startswith(f"{key}=") or line.strip().startswith(f"#{key}="):
+                lines[i] = f"{key}={value}\n"
+                key_found = True
+                break
+        
+        # Add key if not found
+        if not key_found:
+            lines.append(f"{key}={value}\n")
+        
+        # Write back to file
+        with open(env_file_path, 'w') as f:
+            f.writelines(lines)
+            
+        # Update environment variable for current session
+        os.environ[key] = value
+        
+        logger.info(f"Updated .env file: {key}={value}")
+        return True
+    except Exception as e:
+        logger.error(f"Error updating .env file: {str(e)}")
+        return False
 
 if __name__ == '__main__':
     try:

@@ -1,10 +1,10 @@
 import sys
 import os
 
-# Dodaj ścieżkę do głównego katalogu projektu przed importami
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Użyj lokalnego systemu AI
+ai_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if ai_root not in sys.path:
+    sys.path.insert(0, ai_root)
 
 from src.agents.basic_agent import BasicAgent
 from src.agents.table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE

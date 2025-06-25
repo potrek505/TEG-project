@@ -2,9 +2,9 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Import frontend config manager - dodaj ścieżkę do głównego katalogu projektu
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from frontend.config.config_manager import get_frontend_config
+# Import frontend config manager - używaj tylko lokalnego managera
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from config.config_manager import get_frontend_config
 
 load_dotenv()
 

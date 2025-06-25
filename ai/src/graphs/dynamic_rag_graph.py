@@ -1,10 +1,10 @@
 import os
 import sys
 
-# Dodaj ścieżkę do głównego katalogu projektu przed importami
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Użyj lokalnego systemu AI
+ai_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if ai_root not in sys.path:
+    sys.path.insert(0, ai_root)
 
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict
@@ -16,6 +16,7 @@ from src.agents.SQLQueryEvaluatorAgent import SQLQueryEvaluatorAgent
 from src.rags.advanced_rag_config import AdaptiveRAG
 import sqlite3
 from config.logging import get_logger
+from config.config_manager import get_ai_config
 
 logger = get_logger(__name__)
 
@@ -96,12 +97,13 @@ def agent_node(state):
 def create_rag(state):
     logger.info("Creating new RAG instance")
     try:
+        # Pobierz ścieżkę do bazy danych ze zmiennych środowiskowych lub konfiguracji
         db_path = os.environ.get("transactions_db_path")
-        # Try absolute path first, then relative
-        if not os.path.exists(db_path):
-            db_path = os.path.join(os.getcwd(), "all_transactions.db")
+        if not db_path:
+            config = get_ai_config()
+            db_path = config.get("database", "path")
             
-        if not os.path.exists(db_path):
+        if not db_path or not os.path.exists(db_path):
             logger.error(f"Database file not found: {db_path}")
             return state
             
