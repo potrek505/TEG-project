@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 
 class AppUI:
     def __init__(self, api_client, config):
@@ -6,10 +7,10 @@ class AppUI:
         self.config = config
     
     def setup_sidebar(self):
-        """Configure sidebar with session management"""
-        st.sidebar.title("💬 Conversation Sessions")
+        """Skonfiguruj pasek boczny z zarządzaniem sesjami"""
+        st.sidebar.title("💬 Sesje Konwersacji")
 
-        if st.sidebar.button("🆕 New Conversation", use_container_width=True):
+        if st.sidebar.button("🆕 Nowa Konwersacja", use_container_width=True):
             if self.api_client.clear_conversation():
                 new_session_id = self.api_client.create_new_session()
                 if new_session_id:
@@ -17,7 +18,7 @@ class AppUI:
                     st.session_state.messages = []
                     st.session_state.viewing_mode = False
                     st.session_state.viewing_session_id = None
-                    st.success("🆕 New conversation started!")
+                    st.success("🆕 Nowa konwersacja rozpoczęta!")
                     st.rerun()
         
         if st.sidebar.button("🗑️ Clear All Conversation Data", use_container_width=True):
@@ -93,8 +94,58 @@ class AppUI:
             st.sidebar.markdown("---")
             st.sidebar.write(f"🟢 **Active Session:** {st.session_state.current_session_id[:8]}...")
 
+    def setup_ai_provider_selector(self):
+        """Dodaj selektor providera AI w sidebar"""
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("🤖 AI Provider")
+        
+        # Pobierz aktualną konfigurację
+        current_config = self.api_client.get_ai_config()
+        current_provider = "openai"  # default
+        
+        if current_config.get("success") and current_config.get("data"):
+            ai_config = current_config.get("data", {})
+            llm_config = ai_config.get("llm", {})
+            current_provider = llm_config.get("provider", "openai")
+        
+        # Opcje wyboru
+        provider_options = {
+            "openai": "🧠 OpenAI (GPT)",
+            "gemini": "🌟 Google Gemini"
+        }
+        
+        selected_provider = st.sidebar.selectbox(
+            "Wybierz AI Provider:",
+            options=list(provider_options.keys()),
+            format_func=lambda x: provider_options[x],
+            index=0 if current_provider == "openai" else 1,
+            key="ai_provider_selector"
+        )
+        
+        # Wyświetl aktualny model
+        if current_config.get("success") and current_config.get("data"):
+            llm_config = current_config.get("data", {}).get("llm", {})
+            current_model = llm_config.get("model", "Unknown")
+            st.sidebar.info(f"Aktualny model: {current_model}")
+        
+        # Przycisk do zmiany
+        if st.sidebar.button("🔄 Zmień Provider", use_container_width=True):
+            if selected_provider != current_provider:
+                with st.sidebar:
+                    with st.spinner(f"Zmienianie na {provider_options[selected_provider]}..."):
+                        success, message = self.api_client.change_ai_provider(selected_provider)
+                        
+                        if success:
+                            st.success(f"✅ {message}")
+                            time.sleep(1)
+                            st.rerun()  # Odśwież stronę aby zaktualizować konfigurację
+                        else:
+                            st.error(f"❌ {message}")
+            else:
+                st.sidebar.info("👍 Ten provider jest już aktywny")
+
     def display_welcome_message(self):
-        """Display welcome message based on app state"""
+        """Wyświetl wiadomość powitalną na podstawie stanu aplikacji"""
         if len(st.session_state.messages) == 0 and not st.session_state.viewing_mode:
             st.markdown("""
             **Welcome to Your Finance Buddy! 💰**
@@ -111,13 +162,13 @@ class AppUI:
             st.info("📖 You are viewing a previous conversation. This session appears to be empty.")
     
     def display_chat_messages(self):
-        """Display chat message history"""
+        """Wyświetl historię wiadomości czatu"""
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
     def handle_user_input(self):
-        """Handle user input in chat"""
+        """Obsłuż wprowadzanie danych przez użytkownika w czacie"""
         if st.session_state.viewing_mode:
             if st.session_state.viewing_session_id == st.session_state.current_session_id:
                 st.info("👁️ **View mode:** You're viewing your active session. Click on it in the sidebar to continue chatting.")
@@ -166,8 +217,9 @@ class AppUI:
                     message_placeholder.error(error_message)
 
     def run(self):
-        """Run the app UI"""
+        """Uruchom interfejs użytkownika aplikacji"""
         self.setup_sidebar()
+        self.setup_ai_provider_selector()
         
         if st.session_state.viewing_mode:
             st.title("👁️ Your Finance Buddy - Viewing Previous Session")

@@ -1,7 +1,7 @@
 import streamlit as st
 
 def initialize_session_state(config):
-    """Initialize Streamlit session state variables"""
+    """Inicjalizuj zmienne stanu sesji Streamlit"""
     if "current_session_id" not in st.session_state:
         st.session_state.current_session_id = None
     

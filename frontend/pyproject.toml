@@ -1,10 +1,11 @@
 [project]
 name = "frontend"
 version = "0.1.0"
-description = "Streamlit frontend interface for TEG project providing user interaction and visualization"
+description = "Interfejs frontend Streamlit dla projektu TEG zapewniający interakcję użytkownika i wizualizację"
 requires-python = ">=3.11"
 dependencies = [
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
     "streamlit>=1.45.1",
+    "pyyaml>=6.0",
 ]

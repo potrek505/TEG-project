@@ -1,0 +1,125 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8501,
+    "debug": false,
+    "max_upload_size": 200
+  },
+  "app": {
+    "title": "Your Finance Buddy",
+    "page_title": "TEG Finance Assistant",
+    "layout": "wide",
+    "initial_sidebar_state": "expanded",
+    "theme": "light"
+  },
+  "ui": {
+    "chat": {
+      "placeholder": "Ask Your Finance Buddy anything about money...",
+      "max_message_length": 5000,
+      "enable_file_upload": true,
+      "enable_voice_input": false,
+      "auto_scroll": true,
+      "default_system_message": "You are Your Finance Buddy, a helpful and knowledgeable financial advisor AI assistant. Provide accurate financial guidance, investment advice, budgeting tips, and money management strategies in a friendly and approachable manner."
+    },
+    "sidebar": {
+      "show_session_info": true,
+      "show_system_status": true,
+      "show_configuration": false,
+      "collapsible_sections": true
+    },
+    "messages": {
+      "max_display_messages": 50,
+      "enable_message_editing": false,
+      "enable_message_deletion": false,
+      "show_timestamps": true,
+      "markdown_rendering": true
+    },
+    "notifications": {
+      "show_success": true,
+      "show_errors": true,
+      "show_warnings": true,
+      "auto_dismiss_time": 5000
+    }
+  },
+  "backend": {
+    "url": "http://backend:5000",
+    "timeout": 30,
+    "max_retries": 3,
+    "retry_delay": 1,
+    "health_check_interval": 60
+  },
+  "session": {
+    "auto_generate_id": true,
+    "persistence": true,
+    "max_history": 100,
+    "cleanup_on_restart": false
+  },
+  "features": {
+    "conversation_history": true,
+    "session_management": true,
+    "file_upload": true,
+    "export_chat": true,
+    "theme_switcher": true,
+    "system_monitoring": true,
+    "real_time_status": true,
+    "configuration_panel": false
+  },
+  "appearance": {
+    "primary_color": "#1f77b4",
+    "background_color": "#ffffff",
+    "text_color": "#262730",
+    "sidebar_background": "#f0f2f6",
+    "custom_css": {
+      "enabled": false,
+      "file_path": null
+    }
+  },
+  "performance": {
+    "enable_caching": true,
+    "cache_ttl": 300,
+    "lazy_loading": true,
+    "optimize_images": true,
+    "compress_responses": true
+  },
+  "security": {
+    "input_validation": {
+      "enabled": true,
+      "max_input_length": 10000,
+      "sanitize_html": true,
+      "block_javascript": true
+    },
+    "session_security": {
+      "secure_cookies": false,
+      "session_timeout": 3600
+    }
+  },
+  "accessibility": {
+    "keyboard_navigation": true,
+    "screen_reader_support": true,
+    "high_contrast_mode": false,
+    "font_size_adjustment": true
+  },
+  "analytics": {
+    "enabled": false,
+    "track_interactions": false,
+    "track_errors": true,
+    "privacy_mode": true
+  },
+  "integrations": {
+    "export_formats": [
+      "json",
+      "csv",
+      "txt"
+    ],
+    "external_links": {
+      "enabled": true,
+      "open_in_new_tab": true
+    }
+  },
+  "development": {
+    "debug_mode": false,
+    "show_component_info": false,
+    "enable_profiling": false,
+    "hot_reload": true
+  }
+}

@@ -1,26 +1,51 @@
+import os
+import sys
+
+# Użyj lokalnego systemu AI
+ai_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if ai_root not in sys.path:
+    sys.path.insert(0, ai_root)
+
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_community.utilities import SQLDatabase
 from langchain_community.tools import QuerySQLDatabaseTool
 from src.agents.basic_agent import BasicAgent
-from dotenv import load_dotenv
-import os
 from src.agents.table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
+from config.logging import get_logger
 
-load_dotenv()
+logger = get_logger(__name__)
+
 class SQL_Agent(BasicAgent):
-    """Service class for interacting with OpenAI API"""
+    """Klasa serwisu do interakcji z API OpenAI"""
 
-    def __init__(self, db_uri = os.environ.get("transations_db_uri")):
-        db = SQLDatabase.from_uri(db_uri)
-        self.table_schema = ALL_TRANSACTIONS_TABLE_STRUCTURE
-        super().__init__(tools=[QuerySQLDatabaseTool(db=db)])
+    def __init__(self, db_uri=None):
+        try:
+            if db_uri is None:
+                db_uri = os.getenv("transactions_db_uri")
+            if not db_uri:
+                logger.error("Database URI not provided")
+                raise ValueError("Database URI is required")
+                
+            db = SQLDatabase.from_uri(db_uri)
+            self.table_schema = ALL_TRANSACTIONS_TABLE_STRUCTURE
+            super().__init__(tools=[QuerySQLDatabaseTool(db=db)])
+            logger.info("SQL Agent initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize SQL Agent: {str(e)}")
+            raise
 
     def get_agent_response(self, human_message):
         """
-        Get a response using a ReAct agent with Supabase tools
+        Uzyskaj odpowiedź używając agenta ReAct z narzędziami Supabase
         """
         try:
+            if not human_message or not human_message.strip():
+                logger.warning("Empty message provided to SQL Agent")
+                return "Please provide a valid question."
+                
+            logger.info(f"Processing message with SQL Agent: {human_message[:50]}...")
+            
             system_message = f"""
             You are a helpful assistant with access to a SQLite database. This database contains only one table: `all_transactions`.
             Always use only this table and its columns. Do not try to use or guess any other table or column names.
@@ -54,14 +79,15 @@ class SQL_Agent(BasicAgent):
             agent_executor = AgentExecutor.from_agent_and_tools(
                 agent=create_react_agent(self.llm, self.tools, prompt),
                 tools=self.tools,
-                verbose=True,
+                verbose=False,  # Changed from True to reduce noise
                 handle_parsing_errors=True,
             )
         
             response = agent_executor.invoke({"input": human_message})
-        
-            return response.get("output", "No response generated")
+            result = response.get("output", "No response generated")
+            logger.info("SQL Agent response generated successfully")
+            return result
         
         except Exception as e:
-            print(f"[ERROR] Error in agent: {e}")
-            return None
+            logger.error(f"Error in SQL Agent: {str(e)}")
+            return "I apologize, but I encountered an error while processing your request. Please try again or rephrase your question."

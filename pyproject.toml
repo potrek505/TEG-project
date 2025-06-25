@@ -1,7 +1,7 @@
 [project]
 name = "teg-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "Eksplorator Transakcji z GraphRAG - zaawansowany asystent finansowy AI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

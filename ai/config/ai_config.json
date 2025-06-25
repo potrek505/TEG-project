@@ -1,0 +1,89 @@
+{
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "temperature": 0.7,
+    "max_tokens": 4000,
+    "timeout": 60,
+    "retry_attempts": 3,
+    "retry_delay": 1
+  },
+  "google_llm": {
+    "model": "gemini-2.5-flash",
+    "temperature": 0.7,
+    "max_tokens": 4000,
+    "safety_settings": {
+      "block_threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    "api_key": "AIzaSyCIcZg6dQDRhqhfzFNQn76XNqWpF7moO58"
+  },
+  "openai_llm": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7,
+    "max_tokens": 4000
+  },
+  "rag": {
+    "enabled": true,
+    "chunk_size": 1000,
+    "chunk_overlap": 200,
+    "max_docs": 10,
+    "similarity_threshold": 0.7,
+    "embedding_model": "text-embedding-3-small",
+    "vector_store": "faiss"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 50001,
+    "debug": false,
+    "threaded": true,
+    "max_content_length": 16777216
+  },
+  "agents": {
+    "sql_agent": {
+      "enabled": true,
+      "max_iterations": 5,
+      "timeout": 30,
+      "validation_enabled": true
+    },
+    "evaluator_agent": {
+      "enabled": true,
+      "strict_mode": false,
+      "auto_correction": true
+    }
+  },
+  "database": {
+    "path": "/app/all_transactions.db",
+    "connection_timeout": 30,
+    "max_connections": 10,
+    "backup_enabled": true
+  },
+  "session": {
+    "timeout": 3600,
+    "max_sessions": 100,
+    "cleanup_interval": 300
+  },
+  "security": {
+    "rate_limiting": {
+      "enabled": true,
+      "max_requests_per_minute": 60,
+      "max_requests_per_hour": 1000
+    },
+    "input_validation": {
+      "enabled": true,
+      "max_message_length": 10000,
+      "forbidden_patterns": []
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics_collection": true,
+    "performance_tracking": true,
+    "error_reporting": true
+  },
+  "features": {
+    "dynamic_graph": true,
+    "conversation_memory": true,
+    "context_preservation": true,
+    "auto_optimization": false
+  }
+}
