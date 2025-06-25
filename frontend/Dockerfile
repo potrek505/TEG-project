@@ -18,6 +18,8 @@ RUN uv pip install . --system
 # Copy the rest of the application code
 COPY . .
 
+# Nie kopiuj głównego config - frontend używa własnego
+
 # Create a non-root user for security
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 USER app

@@ -1,10 +1,10 @@
 import os
 import sys
 
-# Dodaj ścieżkę do głównego katalogu projektu przed importami
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Użyj lokalnego systemu AI
+ai_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if ai_root not in sys.path:
+    sys.path.insert(0, ai_root)
 
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate

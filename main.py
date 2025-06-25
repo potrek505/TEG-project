@@ -67,6 +67,18 @@ def start_project():
         ai_env["LAUNCHED_BY_MAIN"] = "true"
         ai_env["SERVICE_NAME"] = "ai"
         
+        # Przekaż zmienne bazy danych z głównego .env
+        if os.environ.get("transactions_db"):
+            ai_env["transactions_db"] = os.environ.get("transactions_db")
+        if os.environ.get("transactions_db_uri"):
+            ai_env["transactions_db_uri"] = os.environ.get("transactions_db_uri")
+        if os.environ.get("transactions_db_path"):
+            ai_env["transactions_db_path"] = os.environ.get("transactions_db_path")
+            
+        # Jeśli nie ma transactions_db_path, użyj transactions_db
+        if not ai_env.get("transactions_db_path") and ai_env.get("transactions_db"):
+            ai_env["transactions_db_path"] = ai_env.get("transactions_db")
+        
         ai_process = subprocess.Popen(
             ["uv", "run", "python", "app.py", "--port", ai_port],
             cwd=ai_dir,
@@ -109,6 +121,12 @@ def start_project():
         backend_env["AI_SERVICE_URL"] = f"http://localhost:{ai_port}"
         backend_env["LAUNCHED_BY_MAIN"] = "true"
         backend_env["SERVICE_NAME"] = "backend"
+        
+        # Przekaż zmienne bazy danych z głównego .env
+        if os.environ.get("transactions_db"):
+            backend_env["transactions_db"] = os.environ.get("transactions_db")
+        if os.environ.get("transactions_db_uri"):
+            backend_env["transactions_db_uri"] = os.environ.get("transactions_db_uri")
         
         backend_process = subprocess.Popen(
             ["uv", "run", "python", "app.py", "--port", backend_port], 

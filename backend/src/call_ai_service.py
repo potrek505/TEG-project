@@ -1,10 +1,10 @@
 import os
 import sys
 
-# Dodaj ścieżkę do głównego katalogu projektu przed importami
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Użyj lokalnego systemu Backend
+backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if backend_root not in sys.path:
+    sys.path.insert(0, backend_root)
 
 import requests
 from config.logging import get_logger
@@ -18,12 +18,12 @@ def call_ai_service(endpoint, data, config=None):
     # Get AI service configuration
     if config:
         ai_service_url = config.get('url', os.getenv("AI_SERVICE_URL"))
-        timeout = config.get('timeout', 60)
+        timeout = config.get('timeout', 120)  # Zwiększ timeout do 2 minut
         max_retries = config.get('max_retries', 3)
         retry_delay = config.get('retry_delay', 2)
     else:
         ai_service_url = os.getenv("AI_SERVICE_URL")
-        timeout = 60
+        timeout = 120  # Zwiększ timeout do 2 minut
         max_retries = 3
         retry_delay = 2
     
@@ -99,10 +99,10 @@ def change_ai_provider(provider, config=None):
     # Get AI service configuration
     if config:
         ai_service_url = config.get('url', os.getenv("AI_SERVICE_URL"))
-        timeout = config.get('timeout', 60)
+        timeout = config.get('timeout', 120)  # Zwiększ timeout do 2 minut
     else:
         ai_service_url = os.getenv("AI_SERVICE_URL")
-        timeout = 60
+        timeout = 120  # Zwiększ timeout do 2 minut
     
     if not ai_service_url:
         logger.error("AI service URL not configured")

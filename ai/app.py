@@ -131,7 +131,9 @@ def chat():
             response = new_state.get("rag_response") or new_state.get("agent_response") or "Brak odpowiedzi"
             logger.info(f"Generated response for session {session_id}")
             
-            return jsonify({"response": response, "status": "success"})
+            response_json = {"response": response, "status": "success"}
+            logger.info(f"Sending response to backend for session {session_id}")
+            return jsonify(response_json)
             
         except Exception as graph_error:
             logger.error(f"Error processing graph for session {session_id}: {str(graph_error)}")

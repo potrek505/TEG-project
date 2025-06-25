@@ -87,6 +87,8 @@ class AIConfigManager:
             if "google_llm" not in self._config:
                 self._config["google_llm"] = {}
             self._config["google_llm"]["api_key"] = os.getenv("GOOGLE_API_KEY")
+        if os.getenv("DATABASE_PATH"):
+            self._config["database"]["path"] = os.getenv("transactions_db_path")
     
     def get(self, *keys, default=None):
         """Pobierz wartość z konfiguracji."""
