@@ -1,12 +1,26 @@
 {
   "llm": {
-    "provider": "openai",
-    "model": "gpt-4o-mini",
-    "temperature": 0.3,
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "temperature": 0.7,
     "max_tokens": 4000,
     "timeout": 60,
     "retry_attempts": 3,
     "retry_delay": 1
+  },
+  "google_llm": {
+    "model": "gemini-2.5-flash",
+    "temperature": 0.7,
+    "max_tokens": 4000,
+    "safety_settings": {
+      "block_threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    "api_key": "AIzaSyCIcZg6dQDRhqhfzFNQn76XNqWpF7moO58"
+  },
+  "openai_llm": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7,
+    "max_tokens": 4000
   },
   "rag": {
     "enabled": true,
@@ -19,18 +33,10 @@
   },
   "server": {
     "host": "0.0.0.0",
-    "port": 5001,
+    "port": 50001,
     "debug": false,
     "threaded": true,
     "max_content_length": 16777216
-  },
-  "google_llm": {
-    "model": "gemini-1.5-flash",
-    "temperature": 0.7,
-    "max_tokens": 4000,
-    "safety_settings": {
-      "block_threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    }
   },
   "agents": {
     "sql_agent": {

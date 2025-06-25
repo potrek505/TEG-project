@@ -91,3 +91,52 @@ def call_ai_service(endpoint, data, config=None):
     except Exception as e:
         logger.error(f"Unexpected error when calling AI service: {str(e)}")
         return {"error": "Unexpected AI service error"}
+
+def change_ai_provider(provider, config=None):
+    """
+    Zmień providera AI (OpenAI/Gemini)
+    """
+    # Get AI service configuration
+    if config:
+        ai_service_url = config.get('url', os.getenv("AI_SERVICE_URL"))
+        timeout = config.get('timeout', 60)
+    else:
+        ai_service_url = os.getenv("AI_SERVICE_URL")
+        timeout = 60
+    
+    if not ai_service_url:
+        logger.error("AI service URL not configured")
+        return {"error": "AI service configuration missing"}
+    
+    # Remove any trailing slash
+    ai_service_url = ai_service_url.rstrip('/')
+        
+    try:
+        logger.info(f"Changing AI provider to: {provider}")
+        response = requests.post(
+            f"{ai_service_url}/config/provider", 
+            json={"provider": provider}, 
+            timeout=timeout
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if result.get("success"):
+            logger.info(f"Successfully changed AI provider to: {provider}")
+        else:
+            logger.error(f"Failed to change AI provider: {result.get('error')}")
+        
+        return result
+        
+    except requests.exceptions.Timeout:
+        logger.error("Timeout when changing AI provider")
+        return {"error": "AI service timeout - please try again"}
+    except requests.exceptions.ConnectionError:
+        logger.error("Connection error when changing AI provider")
+        return {"error": "Cannot connect to AI service"}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error when changing AI provider: {str(e)}")
+        return {"error": f"AI service communication error: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Unexpected error when changing AI provider: {str(e)}")
+        return {"error": "Unexpected AI service error"}

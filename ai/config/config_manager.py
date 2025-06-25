@@ -36,6 +36,16 @@ class AIConfigManager:
                 "temperature": 0.7,
                 "max_tokens": 4000
             },
+            "google_llm": {
+                "model": "gemini-2.5-flash",
+                "temperature": 0.7,
+                "max_tokens": 4000
+            },
+            "openai_llm": {
+                "model": "gpt-4o-mini",
+                "temperature": 0.7,
+                "max_tokens": 4000
+            },
             "rag": {
                 "enabled": True,
                 "chunk_size": 1000,
@@ -73,6 +83,10 @@ class AIConfigManager:
             self._config["server"]["port"] = int(os.getenv("AI_PORT"))
         if os.getenv("AI_DEBUG"):
             self._config["server"]["debug"] = os.getenv("AI_DEBUG").lower() == "true"
+        if os.getenv("GOOGLE_API_KEY"):
+            if "google_llm" not in self._config:
+                self._config["google_llm"] = {}
+            self._config["google_llm"]["api_key"] = os.getenv("GOOGLE_API_KEY")
     
     def get(self, *keys, default=None):
         """Pobierz wartość z konfiguracji."""

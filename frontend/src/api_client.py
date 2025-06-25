@@ -179,3 +179,46 @@ class ApiClient:
             logger.error(f"Error resetting database: {str(e)}")
             st.error(f"Error resetting database: {str(e)}")
             return False
+
+    def change_ai_provider(self, provider):
+        """Zmień providera AI (OpenAI/Gemini)"""
+        try:
+            logger.info(f"Changing AI provider to: {provider}")
+            response = requests.post(
+                f"{self.backend_url}/config/ai-provider", 
+                json={"provider": provider}, 
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    logger.info(f"Successfully changed AI provider to: {provider}")
+                    return True, result.get("message", f"Provider changed to {provider}")
+                else:
+                    logger.error(f"Failed to change AI provider: {result.get('error')}")
+                    return False, result.get("error", "Unknown error")
+            else:
+                logger.error(f"Failed to change AI provider. Status: {response.status_code}")
+                return False, f"Server error: {response.status_code}"
+                
+        except requests.exceptions.Timeout:
+            logger.error("Timeout changing AI provider")
+            return False, "Request timed out. Please try again."
+        except Exception as e:
+            logger.error(f"Error changing AI provider: {str(e)}")
+            return False, f"Error: {str(e)}"
+
+    def get_ai_config(self):
+        """Pobierz aktualną konfigurację AI przez backend"""
+        try:
+            logger.info("Fetching AI configuration")
+            response = requests.get(f"{self.backend_url}/config/ai", timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"Failed to fetch AI config. Status: {response.status_code}")
+                return {}
+        except Exception as e:
+            logger.error(f"Error fetching AI config: {str(e)}")
+            return {}
