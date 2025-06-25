@@ -137,11 +137,6 @@ docker-compose down
 - **Backend Service**: localhost:50001 → kontener:5000  
 - **Frontend Service**: localhost:50002 → kontener:8501
 
-### 4. Dostęp do Aplikacji
-- **Frontend**: http://localhost:8501
-- **API Backend**: http://localhost:50000
-- **Serwis AI**: http://localhost:50001
-
 *Porty można konfigurować w `config/.env`*
 
 ## 📁 Struktura Projektu
@@ -213,7 +208,10 @@ TEG-project/
 │   │   ├── ui_components.py # Komponenty UI
 │   │   ├── api_client.py    # Klient backend
 │   │   ├── settings.py      # Konfiguracja
-│   │   └── session_state.py # Zarządzanie stanem
+│   │   ├── session_state.py # Zarządzanie stanem
+│   │   ├── logging_utils.py # Narzędzia logowania
+│   │   └── config/         # Dodatkowa konfiguracja UI
+│   │       └── logging/    # System logowania UI
 │   ├── pyproject.toml
 │   └── Dockerfile
 │
@@ -302,7 +300,10 @@ frontend/config/         # 🎨 Konfiguracja Frontend
 ├── config_manager.py   # FrontendConfigManager
 ├── frontend_config.json # Konfiguracja Frontend w formacie JSON
 ├── .env                # Zmienne środowiskowe Frontend
-└── .env.example       # Przykład konfiguracji Frontend
+├── .env.example       # Przykład konfiguracji Frontend
+└── logging/           # 📝 System logowania Frontend
+    ├── __init__.py    # Pakiet Python
+    └── simple_logging.py # System logowania Frontend
 ```
 
 ### 💡 Przykłady użycia
