@@ -6,31 +6,87 @@ from src.graphs.dynamic_rag_graph import get_dynamic_rag_graph
 
 # Import shared logging system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shared_logging import setup_logging
+from config.logging import init_logging, get_logger
 
-# Konfiguracja loggera używając shared_logging
-logger = setup_logging("ai")
+# Import config manager - lokalny import w kontenerze
+from config.config_manager import get_ai_config
+
+# Inicjalizacja systemu logowania
+init_logging()
+logger = get_logger(__name__)
+
+# Initialize config manager
+config_manager = get_ai_config()
 
 load_dotenv()
 
 app = Flask(__name__)
 
+# Configure Flask app with config manager
+server_config = config_manager.get("server")
+app.config.update({
+    'DEBUG': server_config.get('debug', False) if server_config else False
+})
+
 try:
-    graph = get_dynamic_rag_graph()
-    logger.info("Dynamic RAG graph initialized successfully")
+    # Get RAG configuration
+    rag_enabled = config_manager.get("rag", "enabled", default=True)
+    logger.info(f"RAG configuration loaded: enabled={rag_enabled}")
+    
+    if rag_enabled:
+        graph = get_dynamic_rag_graph()
+        logger.info("Dynamic RAG graph initialized successfully")
+    else:
+        graph = None
+        logger.info("RAG disabled in configuration")
 except Exception as e:
     logger.error(f"Failed to initialize RAG graph: {str(e)}")
     graph = None
 
 session_states = {}
 
+# Configuration endpoint
+@app.route('/config', methods=['GET'])
+def get_config():
+    """Get current AI configuration."""
+    try:
+        return jsonify({
+            "success": True,
+            "data": {
+                "llm": config_manager.get("llm", default={}),
+                "rag": config_manager.get("rag", default={}),
+                "server": config_manager.get("server", default={})
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting config: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/config/reload', methods=['POST'])
+def reload_config():
+    """Reload AI configuration."""
+    try:
+        config_manager.reload_config()
+        logger.info("AI configuration reloaded")
+        return jsonify({"success": True, "message": "Configuration reloaded"})
+    except Exception as e:
+        logger.error(f"Error reloading config: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Enhanced health check with configuration status."""
     graph_status = "healthy" if graph else "unhealthy"
+    rag_enabled = config_manager.get("rag", "enabled", default=True)
+    
     return jsonify({
         "status": "healthy", 
         "service": "ai",
-        "graph": graph_status
+        "graph": graph_status,
+        "rag_enabled": rag_enabled,
+        "config_loaded": True,
+        "llm_provider": config_manager.get("llm", "provider", default="openai"),
+        "llm_model": config_manager.get("llm", "model", default="gpt-4o-mini")
     })
 
 @app.route('/chat', methods=['POST'])
@@ -110,15 +166,27 @@ def clear_conversation():
 
 if __name__ == '__main__':
     try:
-        # Pobierz port z argumentów uruchomieniowych lub z os.getenv
+        # Get server configuration from config manager
+        server_config = config_manager.get_server_config()
+        
+        # Pobierz port z argumentów uruchomieniowych, config managera lub os.getenv
         import argparse
         parser = argparse.ArgumentParser(description="Start AI service")
         parser.add_argument('--port', type=int, help="Port to run the AI service on")
         args = parser.parse_args()
 
-        port = args.port if args.port else int(os.getenv('AI_PORT', 5001))
-        logger.info(f"Starting AI service on port {port}")
-        app.run(host='0.0.0.0', port=port, debug=False)
+        port = (args.port if args.port 
+                else server_config.get('port', int(os.getenv('AI_PORT', 5001))))
+        host = server_config.get('host', '0.0.0.0')
+        debug = server_config.get('debug', False)
+        
+        logger.info(f"Starting AI service on {host}:{port} (debug={debug})")
+        app.run(host=host, port=port, debug=debug)
+    except KeyboardInterrupt:
+        logger.info("AI service stopped by user")
     except Exception as e:
         logger.error(f"Failed to start AI service: {str(e)}")
         sys.exit(1)
+    finally:
+        # Stop config manager watching
+        config_manager.stop_watching()

@@ -1,11 +1,10 @@
-import requests
-import streamlit as st
 import sys
 import os
+import requests
+import streamlit as st
 
 # Import shared logging system
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from shared_logging import get_logger
+from .logging_utils import get_logger
 
 logger = get_logger(__name__)
 

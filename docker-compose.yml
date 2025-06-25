@@ -10,7 +10,7 @@ services:
     volumes:
       - ./all_transactions.db:/app/all_transactions.db
     env_file:
-      - ./ai/.env
+      - ./ai/config/.env
 
   backend:
     build:
@@ -21,7 +21,7 @@ services:
       - ai
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - ./backend/config/.env
 
   frontend:
     build:
@@ -32,4 +32,4 @@ services:
       - backend
     restart: unless-stopped
     env_file:
-      - ./frontend/.env
+      - ./frontend/config/.env

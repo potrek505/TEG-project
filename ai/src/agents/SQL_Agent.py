@@ -1,15 +1,18 @@
+import os
+import sys
+
+# Dodaj ścieżkę do głównego katalogu projektu przed importami
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_community.utilities import SQLDatabase
 from langchain_community.tools import QuerySQLDatabaseTool
 from src.agents.basic_agent import BasicAgent
 from src.agents.table_structures import ALL_TRANSACTIONS_TABLE_STRUCTURE
-import os
-import sys
-
-# Import shared logging system
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from shared_logging import get_logger
+from config.logging import get_logger
 
 logger = get_logger(__name__)
 

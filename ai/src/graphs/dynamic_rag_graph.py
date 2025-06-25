@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Dodaj ścieżkę do głównego katalogu projektu przed importami
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict
 from langchain_core.documents import Document
@@ -7,12 +15,7 @@ from src.agents.SQL_Agent import SQL_Agent
 from src.agents.SQLQueryEvaluatorAgent import SQLQueryEvaluatorAgent
 from src.rags.advanced_rag_config import AdaptiveRAG
 import sqlite3
-import os
-import sys
-
-# Import shared logging system
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from shared_logging import get_logger
+from config.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -93,7 +96,7 @@ def agent_node(state):
 def create_rag(state):
     logger.info("Creating new RAG instance")
     try:
-        db_path = os.environ.get("transactions_db", "all_transactions.db")
+        db_path = os.environ.get("transactions_db_path")
         # Try absolute path first, then relative
         if not os.path.exists(db_path):
             db_path = os.path.join(os.getcwd(), "all_transactions.db")

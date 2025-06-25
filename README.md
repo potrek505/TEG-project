@@ -46,11 +46,8 @@ System wykorzystuje inteligentny graf decyzyjny, który:
 
 - **🧠 Inteligentne Kierowanie Zapytań**: Automatyczny wybór optymalnej strategii przetwarzania
 - **💬 Interfejs Konwersacyjny**: Interakcja w języku naturalnym z danymi finansowymi
-- **📊 Analiza Transakcji**: Głębokie wglądy w wzorce wydatków i trendy
 - **🔍 Wyszukiwanie Semantyczne**: Znajdowanie odpowiednich transakcji w języku naturalnym
-- **📈 Porady Finansowe**: Spersonalizowane rekomendacje oparte na danych
 - **💾 Zarządzanie Sesjami**: Zapisywanie i ponowne odwiedzanie poprzednich konwersacji
-- **🔄 Przetwarzanie w Czasie Rzeczywistym**: Natychmiastowe odpowiedzi na zapytania finansowe
 - **🏗️ Projekt Mikrousług**: Skalowalna i łatwa w utrzymaniu architektura
 
 ## 🛠️ Stos Technologiczny
@@ -84,12 +81,30 @@ System wykorzystuje inteligentny graf decyzyjny, który:
 - Klucz API OpenAI
 - Docker (opcjonalnie, do wdrożenia kontenerowego)
 
+### 🔧 Główny Orkiestrator (`main.py`)
+
+Projekt wykorzystuje zaawansowany orkiestrator, który:
+
+- **🔄 Inteligentne Uruchamianie**: Automatyczne kolejne uruchamianie AI → Backend → Frontend
+- **📊 Monitoring Logów**: Wszystkie logi z subprocessów przekierowywane do głównego systemu logowania
+- **🛡️ Graceful Shutdown**: Kontrolowane zatrzymywanie wszystkich serwisów przez Ctrl+C
+- **🌍 Zmienne Środowiskowe**: Automatyczne ustawianie PYTHONPATH i portów dla każdego serwisu
+- **⚠️ Obsługa Błędów**: Szczegółowe raportowanie błędów uruchamiania
+- **🔍 Health Monitoring**: Sprawdzanie czy procesy nadal działają co 5 sekund
+
 ### 1. Klonowanie i Konfiguracja
 ```bash
 git clone <url-repozytorium>
 cd TEG-project
-cp .env.example .env
-# Edytuj .env swoim kluczem API OpenAI
+
+# Skopiuj przykładowe pliki konfiguracyjne
+cp config/.env.example config/.env
+cp ai/config/.env.example ai/config/.env
+cp backend/config/.env.example backend/config/.env
+cp frontend/config/.env.example frontend/config/.env
+
+# Edytuj pliki .env swoimi kluczami API i konfiguracją
+# Głównie OPENAI_API_KEY w config/.env
 ```
 
 ### 2. Rozwój Lokalny
@@ -97,8 +112,12 @@ cp .env.example .env
 # Uruchom wszystkie serwisy
 python main.py
 
-# W innym terminalu, monitoruj logi
-python log_manager.py follow
+# Logi będą wyświetlane w terminalu z prefiksami:
+# AI: [logi z serwisu AI]
+# Backend: [logi z serwisu Backend] 
+# Frontend: [logi z serwisu Frontend]
+
+# Zatrzymaj wszystkie serwisy: Ctrl+C
 ```
 
 ### 3. Wdrożenie Docker
@@ -108,65 +127,101 @@ docker-compose up -d
 
 # Zobacz logi
 docker-compose logs -f
+
+# Zatrzymaj serwisy
+docker-compose down
 ```
+
+**Porty Docker:**
+- **AI Service**: localhost:50000 → kontener:5001
+- **Backend Service**: localhost:50001 → kontener:5000  
+- **Frontend Service**: localhost:50002 → kontener:8501
 
 ### 4. Dostęp do Aplikacji
 - **Frontend**: http://localhost:8501
 - **API Backend**: http://localhost:50000
 - **Serwis AI**: http://localhost:50001
 
+*Porty można konfigurować w `config/.env`*
+
 ## 📁 Struktura Projektu
 
 ```
 TEG-project/
 ├── main.py                 # Orkiestrator projektu
-├── shared_logging.py       # Scentralizowany system logowania
-├── log_manager.py         # Narzędzie zarządzania logami
 ├── dynamic_rag_graph.png  # Wizualizacja przepływu grafu
 ├── docker-compose.yml     # Orkiestracja wielu serwisów
 ├── all_transactions.db    # Przykładowa baza danych transakcji
+├── pyproject.toml         # Konfiguracja workspace Python
+├── uv.lock               # Lock file dependencies
 │
-├── ai/                    # Serwis AI
-│   ├── app.py            # Serwis AI Flask
+├── config/               # 🔧 Konfiguracja głównego projektu
+│   ├── __init__.py      # Pakiet Python
+│   ├── config_manager.py # Manager konfiguracji projektu
+│   ├── project_config.json # Konfiguracja JSON głównego projektu
+│   ├── .env             # Zmienne środowiskowe projektu
+│   ├── .env.example     # Przykład konfiguracji środowiskowej
+│   └── logging/         # 📝 System logowania
+│       ├── __init__.py  # Pakiet Python
+│       └── simple_logging.py # Scentralizowany system logowania
+│
+├── ai/                  # 🤖 Serwis AI
+│   ├── app.py          # Serwis AI Flask
+│   ├── config/         # Konfiguracja AI
+│   │   ├── __init__.py
+│   │   ├── config_manager.py
+│   │   ├── ai_config.json
+│   │   ├── .env
+│   │   ├── .env.example
+│   │   └── logging/    # 📝 System logowania AI
+│   │       ├── __init__.py
+│   │       └── simple_logging.py
 │   ├── src/
-│   │   ├── agents/       # Agenci SQL i ewaluacyjni
-│   │   ├── graphs/       # Implementacja LangGraph
-│   │   └── rags/         # Konfiguracje RAG
+│   │   ├── agents/     # Agenci SQL i ewaluacyjni
+│   │   ├── graphs/     # Implementacja LangGraph
+│   │   └── rags/       # Konfiguracje RAG
+│   ├── pyproject.toml
 │   └── Dockerfile
 │
-├── backend/              # Serwis Backend
-│   ├── app.py           # API backend Flask
+├── backend/            # 🌐 Serwis Backend
+│   ├── app.py         # API backend Flask
+│   ├── config/        # Konfiguracja Backend
+│   │   ├── __init__.py
+│   │   ├── config_manager.py
+│   │   ├── backend_config.json
+│   │   ├── .env
+│   │   ├── .env.example
+│   │   └── logging/   # 📝 System logowania Backend
+│   │       ├── __init__.py
+│   │       └── simple_logging.py
 │   ├── src/
-│   │   ├── database.py  # Zarządzanie konwersacjami
-│   │   └── call_ai_service.py  # Klient serwisu AI
+│   │   ├── database.py # Zarządzanie konwersacjami
+│   │   └── call_ai_service.py # Klient serwisu AI
+│   ├── conversations.db # Baza danych konwersacji
+│   ├── pyproject.toml
 │   └── Dockerfile
 │
-├── frontend/            # Serwis Frontend
-│   ├── app.py          # Aplikacja Streamlit
+├── frontend/          # 🎨 Serwis Frontend
+│   ├── app.py        # Aplikacja Streamlit
+│   ├── config/       # Konfiguracja Frontend
+│   │   ├── __init__.py
+│   │   ├── config_manager.py
+│   │   ├── frontend_config.json
+│   │   ├── .env
+│   │   └── .env.example
 │   ├── src/
-│   │   ├── ui_components.py  # Komponenty UI
-│   │   ├── api_client.py     # Klient backend
-│   │   ├── settings.py       # Konfiguracja
-│   │   └── session_state.py  # Zarządzanie stanem
+│   │   ├── ui_components.py # Komponenty UI
+│   │   ├── api_client.py    # Klient backend
+│   │   ├── settings.py      # Konfiguracja
+│   │   └── session_state.py # Zarządzanie stanem
+│   ├── pyproject.toml
 │   └── Dockerfile
 │
-└── logs/               # Scentralizowane logowanie
-    ├── main.log       # Logi procesu głównego
-    ├── ai.log         # Logi serwisu AI
-    ├── backend.log    # Logi serwisu backend
-    ├── frontend.log   # Logi serwisu frontend
-    ├── combined.log   # Wszystkie serwisy połączone
-    └── errors.log     # Tylko logi błędów
+└── logs/             # 📊 Scentralizowane logowanie
+    └── teg_app.log  # Wszystkie logi projektu
 ```
 
 ## 📊 Przykłady Użycia
-
-### Analiza Finansowa
-```
-"Pokaż mi trendy wydatków z ostatnich 3 miesięcy"
-"Jakie są moje największe wydatki w tym roku?"
-"Ile wydałem na restauracje?"
-```
 
 ### Wyszukiwanie Transakcji
 ```
@@ -175,98 +230,195 @@ TEG-project/
 "Co kupiłem z Amazon w zeszłym miesiącu?"
 ```
 
-### Porady Finansowe
-```
-"Jak mogę zmniejszyć swoje miesięczne wydatki?"
-"Czy powinienem się martwić moimi wzorcami wydatków?"
-"Jaki jest mój średni miesięczny dochód?"
-```
-
 ## 🔧 Konfiguracja
 
 ### Zmienne Środowiskowe
+
+**Główny projekt** (`config/.env`):
 - `OPENAI_API_KEY`: Twój klucz API OpenAI
+- `DEFAULT_MODEL`: Model OpenAI (domyślnie: gpt-4o-mini)
+- `DEFAULT_TEMPERATURE`: Temperatura modelu (domyślnie: 0.7)
 - `AI_PORT`: Port serwisu AI (domyślnie: 50001)
 - `BACKEND_PORT`: Port serwisu backend (domyślnie: 50000)  
 - `FRONTEND_PORT`: Port serwisu frontend (domyślnie: 8501)
+- `AI_SERVICE_URL`: URL serwisu AI
+- `BACKEND_SERVICE_URL`: URL serwisu backend
+- `ENVIRONMENT`: Środowisko (development/production)
+- `LOG_LEVEL`: Poziom logowania (INFO/DEBUG/WARNING/ERROR)
+
+**Każdy segment** ma również własne pliki `.env` w katalogach `config/`:
+- `ai/config/.env` - Konfiguracja specyficzna dla AI
+- `backend/config/.env` - Konfiguracja specyficzna dla Backend  
+- `frontend/config/.env` - Konfiguracja specyficzna dla Frontend
 
 ### Konfiguracja Bazy Danych
 - `transactions_db_uri`: URI bazy danych SQLite dla transakcji
 - `transactions_db`: Ścieżka do pliku bazy danych
 
+### Hierarchia Konfiguracji
+1. **Domyślne wartości** w config managerach
+2. **Pliki JSON** w katalogach `config/` 
+3. **Zmienne środowiskowe** z plików `.env` (nadpisują JSON)
+4. **Zmienne systemowe** (nadpisują wszystko)
+
+## ⚙️ Zarządzanie Konfiguracją
+
+TEG wykorzystuje zaawansowany system konfiguracji z oddzielnymi config managerami dla każdego segmentu:
+
+### 📁 Struktura Konfiguracji
+```
+config/                     # 🔧 Główna konfiguracja projektu
+├── __init__.py            # Pakiet Python
+├── config_manager.py      # ProjectConfigManager
+├── project_config.json    # Konfiguracja głównego projektu
+├── .env                   # Zmienne środowiskowe projektu
+├── .env.example          # Przykład konfiguracji
+└── logging/              # 📝 System logowania
+    ├── __init__.py       # Pakiet Python
+    └── simple_logging.py # Scentralizowany system logowania
+
+ai/config/                 # 🤖 Konfiguracja AI
+├── __init__.py           # Pakiet Python
+├── config_manager.py     # AIConfigManager
+├── ai_config.json        # Konfiguracja AI w formacie JSON
+├── .env                  # Zmienne środowiskowe AI
+├── .env.example         # Przykład konfiguracji AI
+└── logging/             # 📝 System logowania AI
+    ├── __init__.py      # Pakiet Python
+    └── simple_logging.py # System logowania AI
+
+backend/config/           # 🌐 Konfiguracja Backend
+├── __init__.py          # Pakiet Python
+├── config_manager.py    # BackendConfigManager
+├── backend_config.json  # Konfiguracja Backend w formacie JSON
+├── .env                 # Zmienne środowiskowe Backend
+├── .env.example        # Przykład konfiguracji Backend
+└── logging/            # 📝 System logowania Backend
+    ├── __init__.py     # Pakiet Python
+    └── simple_logging.py # System logowania Backend
+
+frontend/config/         # 🎨 Konfiguracja Frontend
+├── __init__.py         # Pakiet Python
+├── config_manager.py   # FrontendConfigManager
+├── frontend_config.json # Konfiguracja Frontend w formacie JSON
+├── .env                # Zmienne środowiskowe Frontend
+└── .env.example       # Przykład konfiguracji Frontend
+```
+
+### 💡 Przykłady użycia
+
+```python
+# Główny projekt
+from config.config_manager import get_project_config
+config = get_project_config()
+
+# Pobieranie portów serwisów
+ports = config.get_all_ports()
+ai_port = config.get_service_port("ai")
+backend_url = config.get_service_url("backend")
+
+# AI Service
+from ai.config.config_manager import get_ai_config
+ai_config = get_ai_config()
+
+# Pobieranie wartości AI
+model = ai_config.get("llm", "model", default="gpt-4o-mini")
+rag_enabled = ai_config.get("rag", "enabled", default=True)
+
+# Backend Service
+from backend.config.config_manager import get_backend_config
+backend_config = get_backend_config()
+
+# Pobieranie konfiguracji backend
+db_path = backend_config.get("database", "conversations", "path")
+api_timeout = backend_config.get("api", "timeout", default=30)
+
+# Frontend Service
+from frontend.config.config_manager import get_frontend_config
+frontend_config = get_frontend_config()
+
+# Pobieranie konfiguracji UI
+app_title = frontend_config.get("app", "title")
+theme = frontend_config.get("ui", "theme", default="light")
+
+# Ustawianie wartości (automatycznie zapisuje do pliku)
+ai_config.set("llm", "temperature", 0.8)
+backend_config.set("api", "timeout", 60)
+frontend_config.set("ui", "theme", "dark")
+```
+
+### 🔄 Hot-reload
+Config managery automatycznie śledzą zmiany w plikach:
+- `*.json` - pliki konfiguracji w katalogach `config/`
+- `.env` - zmienne środowiskowe w katalogach `config/`
+
+Gdy wykryją zmianę, automatycznie przeładowują konfigurację bez restartowania aplikacji.
+
 ## 📝 System Logowania
 
 Projekt wykorzystuje scentralizowany system logowania z następującymi funkcjami:
 
-### Pliki Logów
+### 📁 Struktura Logowania
+
+System logowania znajduje się w `config/logging/`:
+- **`simple_logging.py`** - Główny moduł konfiguracji logowania
+- **`__init__.py`** - Pakiet Python eksportujący `init_logging` i `get_logger`
+
+Dodatkowo każdy serwis (AI, Backend) ma swoje lokalne kopie systemu logowania w swoich katalogach `config/logging/` dla izolacji kontenerów.
+
+### 📊 Pliki Logów
 
 Wszystkie logi są przechowywane w katalogu `logs/`:
+- `teg_app.log` - Wszystkie logi projektu z prefiksami serwisów
 
-- `main.log` - Logi orkiestratora głównego
-- `ai.log` - Logi serwisu AI  
-- `backend.log` - Logi serwisu backend
-- `frontend.log` - Logi serwisu frontend
-- `combined.log` - Wszystkie serwisy połączone
-- `errors.log` - Wszystkie błędy ze wszystkich serwisów
+### ✨ Funkcje
 
-### Zarządzanie Logami
+- **� Jedno Miejsce Logów**: Wszystkie logi w `logs/teg_app.log` z prefiksami
+- **🌍 Obsługa UTF-8**: Właściwe kodowanie dla znaków międzynarodowych
+- **🔇 Zmniejszony Szum**: Logi bibliotek zewnętrznych filtrowane na poziom WARNING
+- **📍 Szczegółowe Formatowanie**: Zawiera nazwy plików i numery linii
+- **🏗️ Centralizacja**: System logowania dostępny dla wszystkich segmentów
+- **⚡ Import Prosty**: `from config.logging import init_logging, get_logger`
+- **🐳 Kompatybilność Kontenerów**: Lokalne kopie dla każdego serwisu
 
-Użyj narzędzia `log_manager.py` do zarządzania logami:
+## 🏗️ Workspace i Zarządzanie Zależnościami
 
-```bash
-# Wylistuj wszystkie pliki logów
-python log_manager.py list
+TEG używa **uv** jako szybkiego narzędzia do zarządzania pakietami Python i **workspace** do organizacji projektu wielosegmentowego.
 
-# Pokaż ostatnie logi ze wszystkich serwisów
-python log_manager.py show
+### 📦 Struktura Workspace
 
-# Pokaż ostatnie logi z konkretnego serwisu
-python log_manager.py show --service ai
+Projekt zorganizowany jako **uv workspace** z głównym `pyproject.toml`:
 
-# Pokaż tylko błędy
-python log_manager.py show --errors
-
-# Śledź logi w czasie rzeczywistym
-python log_manager.py follow
-
-# Śledź logi konkretnego serwisu
-python log_manager.py follow --service backend
-
-# Śledź tylko błędy
-python log_manager.py follow --errors
-
-# Wyczyść wszystkie pliki logów
-python log_manager.py clear
+```toml
+[tool.uv.workspace]
+members = [
+    "backend",
+    "frontend", 
+    "ai",
+]
 ```
 
-### Funkcje
+Każdy segment ma własny `pyproject.toml` z dependencies:
+- **`ai/pyproject.toml`** - LangChain, FAISS, OpenAI, Flask
+- **`backend/pyproject.toml`** - Flask, Requests, SQLite
+- **`frontend/pyproject.toml`** - Streamlit, Requests
+- **`pyproject.toml`** (główny) - Współdzielone zależności jak python-dotenv
 
-- **Automatyczna Rotacja Logów**: Pliki rotują się przy 10MB z 5 kopiami zapasowymi
-- **Wiele Celów Wyjściowych**: Konsola + indywidualne pliki + połączone + błędy
-- **Obsługa UTF-8**: Właściwe kodowanie dla znaków międzynarodowych
-- **Zmniejszony Szum**: Logi bibliotek zewnętrznych filtrowane na poziom WARNING
-- **Szczegółowe Formatowanie**: Zawiera nazwy plików i numery linii
+### 🚀 Komendy uv
 
-## 🤝 Współpraca
+```bash
+# Instalacja wszystkich dependencies w workspace
+uv sync
 
-1. Sforkuj repozytorium
-2. Utwórz gałąź funkcji
-3. Wprowadź swoje zmiany
-4. Dodaj testy jeśli to możliwe
-5. Zaktualizuj dokumentację
-6. Prześlij pull request
+# Uruchomienie w konkretnym segmencie
+cd ai && uv run python app.py
+cd backend && uv run python app.py  
+cd frontend && uv run streamlit run app.py
 
-## 📄 Licencja
+# Dodanie dependency do konkretnego segmentu
+cd ai && uv add langchain-openai
+cd backend && uv add flask-cors
 
-Ten projekt jest licencjonowany na licencji MIT - zobacz plik LICENSE dla szczegółów.
-
-## 🆘 Wsparcie
-
-W przypadku pytań, problemów lub współpracy:
-- Sprawdź logi używając `python log_manager.py show --errors`
-- Przejrzyj punkty końcowe health API
-- Upewnij się, że wszystkie zmienne środowiskowe są poprawnie skonfigurowane
-
----
-
-**Zbudowane z ❤️ używając Python, LangChain i nowoczesnych technologii AI**
+# Uruchomienie z głównego katalogu
+uv run python main.py
+```
