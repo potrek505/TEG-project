@@ -1,9 +1,12 @@
-from langchain_openai import ChatOpenAI
 import os
 import sys
 
-# Import shared logging system
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+# Dodaj ścieżkę do głównego katalogu projektu przed importami
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from langchain_openai import ChatOpenAI
 from config.logging import get_logger
 
 logger = get_logger(__name__)

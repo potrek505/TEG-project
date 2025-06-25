@@ -114,6 +114,10 @@ class AIConfigManager:
         except Exception as e:
             print(f"Błąd zapisywania konfiguracji AI: {e}")
     
+    def get_server_config(self):
+        """Pobierz konfigurację serwera."""
+        return self.get("server", default={})
+    
     def _watch_files(self):
         """Obserwuj zmiany w plikach."""
         last_modified = {}

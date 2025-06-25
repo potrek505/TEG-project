@@ -207,3 +207,35 @@ def get_project_config():
     if _project_config is None:
         _project_config = ProjectConfigManager()
     return _project_config
+
+def get_ai_config():
+    """Fallback dla AI config - przekieruj do lokalnego managera AI."""
+    import sys
+    import os
+    
+    # Próbuj zaimportować lokalny config manager AI
+    try:
+        ai_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ai")
+        sys.path.insert(0, ai_dir)
+        from config.config_manager import get_ai_config as local_get_ai_config
+        sys.path.remove(ai_dir)
+        return local_get_ai_config()
+    except ImportError:
+        # Jeśli nie można zaimportować, zwróć project config jako fallback
+        return get_project_config()
+
+def get_backend_config():
+    """Fallback dla Backend config - przekieruj do lokalnego managera Backend."""
+    import sys
+    import os
+    
+    # Próbuj zaimportować lokalny config manager Backend
+    try:
+        backend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend")
+        sys.path.insert(0, backend_dir)
+        from config.config_manager import get_backend_config as local_get_backend_config
+        sys.path.remove(backend_dir)
+        return local_get_backend_config()
+    except ImportError:
+        # Jeśli nie można zaimportować, zwróć project config jako fallback
+        return get_project_config()

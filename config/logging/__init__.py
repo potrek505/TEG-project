@@ -1,6 +1,4 @@
-# Logging Configuration Package
-# Centralna konfiguracja logowania dla projektu TEG
+# Prosty system logowania dla projektu TEG
+from .simple_logging import init_logging, get_logger, debug, info, warning, error, clear_logs, show_logs
 
-from .shared_logging import setup_logging, get_logger
-
-__all__ = ['setup_logging', 'get_logger']
+__all__ = ['init_logging', 'get_logger', 'debug', 'info', 'warning', 'error', 'clear_logs', 'show_logs']

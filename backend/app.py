@@ -8,13 +8,14 @@ from src.database import ConversationDB
 
 # Import shared logging system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.logging import setup_logging
+from config.logging import init_logging, get_logger
 
-# Import config manager
-from backend.config.config_manager import get_backend_config
+# Import config manager - lokalny import w kontenerze
+from config.config_manager import get_backend_config
 
-# Konfiguracja loggera używając shared_logging
-logger = setup_logging("backend")
+# Inicjalizacja systemu logowania
+init_logging()
+logger = get_logger(__name__)
 
 # Initialize config manager
 config_manager = get_backend_config()

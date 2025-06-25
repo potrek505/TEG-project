@@ -6,13 +6,14 @@ from src.graphs.dynamic_rag_graph import get_dynamic_rag_graph
 
 # Import shared logging system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.logging import setup_logging
+from config.logging import init_logging, get_logger
 
-# Import config manager
-from ai.config.config_manager import get_ai_config
+# Import config manager - lokalny import w kontenerze
+from config.config_manager import get_ai_config
 
-# Konfiguracja loggera używając shared_logging
-logger = setup_logging("ai")
+# Inicjalizacja systemu logowania
+init_logging()
+logger = get_logger(__name__)
 
 # Initialize config manager
 config_manager = get_ai_config()

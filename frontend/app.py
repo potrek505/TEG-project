@@ -1,17 +1,16 @@
-import streamlit as st
 import sys
 import os
-from src.settings import config, get_config, reload_config, config_manager
+import streamlit as st
+
+from src.settings import config, get_config, config_manager
 from src.session_state import initialize_session_state
 from src.api_client import ApiClient
 from src.ui_components import AppUI
+from src.logging_utils import init_logging, get_logger
 
-# Import shared logging system
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.logging import setup_logging
-
-# Konfiguracja loggera używając shared_logging
-logger = setup_logging("frontend")
+# Inicjalizacja systemu logowania
+init_logging()
+logger = get_logger(__name__)
 
 def main():
     try:
